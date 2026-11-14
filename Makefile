@@ -8,7 +8,7 @@ GOFLAGS ?=
 
 .DEFAULT_GOAL := check
 
-.PHONY: help check check-all build run test test-race cover vet fmt fmt-check lint tidy generate clean
+.PHONY: help check check-all build run test test-race spec spec-all cover vet fmt fmt-check lint tidy generate clean
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -26,6 +26,12 @@ run: ## Run cmd/markov
 
 test: ## Run unit tests
 	$(GOTEST) $(GOFLAGS) -count=1 ./...
+
+spec: ## Run tests and display as RFC 2119 spec (specable sub-tests only)
+	$(GOTEST) $(GOFLAGS) -v -count=1 ./... 2>&1 | $(GO) run ./tools/testspec
+
+spec-all: ## Run tests and display all sub-tests (specable + non-specable)
+	$(GOTEST) $(GOFLAGS) -v -count=1 ./... 2>&1 | $(GO) run ./tools/testspec --all
 
 test-race: ## Run tests with the race detector
 	$(GOTEST) $(GOFLAGS) -race -count=1 ./...
