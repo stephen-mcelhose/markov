@@ -1,0 +1,73 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://github.com/stephen-mcelhose/markov/vocab#",
+    "markov": "https://github.com/stephen-mcelhose/markov/vocab#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+
+    "SurfaceGraph": "markov:SurfaceGraph",
+    "PredicateSchema": "markov:PredicateSchema",
+    "Package": "markov:Package",
+    "File": "markov:File",
+    "Error": "markov:Error",
+    "Type": "markov:Type",
+    "Function": "markov:Function",
+    "Method": "markov:Method",
+    "Source": "markov:Source",
+    "Invariant": "markov:Invariant",
+
+    "module": { "@id": "markov:module", "@type": "xsd:string" },
+    "schema": { "@id": "markov:hasPredicateSchema", "@type": "@id" },
+    "layer1": { "@id": "markov:hasPackage", "@type": "@id" },
+    "reduce": { "@id": "markov:hasPackage", "@type": "@id" },
+    "solve": { "@id": "markov:hasPackage", "@type": "@id" },
+    "infer": { "@id": "markov:hasPackage", "@type": "@id" },
+    "control": { "@id": "markov:hasPackage", "@type": "@id" },
+
+    "files": { "@id": "markov:fileList", "@type": "xsd:string", "@container": "@list" },
+    "errorList": { "@id": "markov:errorList", "@type": "xsd:string", "@container": "@list" },
+
+    "doc": { "@id": "markov:hasFile", "@type": "@id" },
+    "errors": { "@id": "markov:hasFile", "@type": "@id" },
+    "kernel": { "@id": "markov:hasFile", "@type": "@id" },
+    "distribution": { "@id": "markov:hasFile", "@type": "@id" },
+    "partition": { "@id": "markov:hasFile", "@type": "@id" },
+    "trace": { "@id": "markov:hasFile", "@type": "@id" },
+    "lump": { "@id": "markov:hasFile", "@type": "@id" },
+    "bisim": { "@id": "markov:hasFile", "@type": "@id" },
+    "stationary": { "@id": "markov:hasFile", "@type": "@id" },
+    "fundamental": { "@id": "markov:hasFile", "@type": "@id" },
+    "mfpt": { "@id": "markov:hasFile", "@type": "@id" },
+    "classes": { "@id": "markov:hasFile", "@type": "@id" },
+    "entropy": { "@id": "markov:hasFile", "@type": "@id" },
+    "estimate": { "@id": "markov:hasFile", "@type": "@id" },
+    "order": { "@id": "markov:hasFile", "@type": "@id" },
+    "mdp": { "@id": "markov:hasFile", "@type": "@id" },
+    "dp": { "@id": "markov:hasFile", "@type": "@id" },
+
+    "package": { "@id": "markov:package", "@type": "xsd:string" },
+    "importPath": { "@id": "markov:importPath", "@type": "xsd:string" },
+    "dir": { "@id": "markov:dir", "@type": "xsd:string" },
+    "dependsOn": { "@id": "markov:dependsOn", "@type": "@id", "@container": "@set" },
+    "known_unknowns": { "@id": "markov:knownUnknown", "@type": "xsd:string", "@container": "@set" },
+
+    "path": { "@id": "markov:path", "@type": "xsd:string" },
+    "symbols": { "@id": "markov:hasSymbol", "@type": "@id", "@container": "@list" },
+
+    "name": { "@id": "markov:name", "@type": "xsd:string" },
+    "signature": { "@id": "markov:signature", "@type": "xsd:string" },
+    "def": { "@id": "markov:def", "@type": "xsd:string" },
+    "req": { "@id": "markov:req", "@type": "xsd:string" },
+    "err": { "@id": "markov:err", "@type": "xsd:string" },
+    "receiverType": { "@id": "markov:receiverType", "@type": "@id" },
+    "delegatesTo": { "@id": "markov:delegatesTo", "@type": "@id" },
+    "references": { "@id": "markov:references", "@type": "@id", "@container": "@set" },
+    "src": { "@id": "markov:hasSource", "@type": "@id", "@container": "@list" },
+    "invariants": { "@id": "markov:hasInvariant", "@type": "@id", "@container": "@list" },
+
+    "citation": { "@id": "markov:citation", "@type": "xsd:string" },
+    "url": { "@id": "markov:url", "@type": "xsd:anyURI" },
+    "title": { "@id": "markov:title", "@type": "xsd:string" },
+    "expr": { "@id": "markov:expr", "@type": "xsd:string" }
+  }
+}

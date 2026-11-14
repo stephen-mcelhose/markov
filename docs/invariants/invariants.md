@@ -63,8 +63,7 @@ Let $\mathcal{B} = \{B_0, \dots, B_{m-1}\}$ be a valid partition of $\{0, \dots,
 ### 3.2 Kemeny–Snell Strong Lumpability Equivalence
 The strong lumpability residual
 $$R(P, \mathcal{B}) = \max_{B_i} \max_{s, s' \in B_i} \max_{B_j} \left| (PV)_{s, j} - (PV)_{s', j} \right|$$
-satisfies $R(P, \mathcal{B}) \le \varepsilon$ if and only if:
-$$\|P V - V \hat{P}\|_\infty \le \varepsilon$$
+satisfies $R(P, \mathcal{B}) \le \varepsilon$ if and only if $\text{IsStronglyLumpable}(P, \mathcal{B}, \varepsilon) = \text{true}$ (with exact commutation $P V = V \hat{P}$ at $\varepsilon = 0$).
 
 ### 3.3 Distributor Weight Invariance Under Strong Lumpability
 When $P$ is strongly lumpable on $\mathcal{B}$ ($R(P, \mathcal{B}) = 0$), $\hat{P} = U P V$ **MUST** be invariant to the choice of valid block weights in $U$.
@@ -87,6 +86,6 @@ $$\text{Trace}(\text{Lump}(P, \mathcal{B}), \mathcal{I}) = \text{Lump}(\text{Tra
 where $\mathcal{B}|_A$ is the restriction of $\mathcal{B}$ to the blocks indexed by $\mathcal{I}$.
 
 ### 4.2 Solver Consistency (`markov/solve`)
-* **Stationary Eigen-Identity:** Every returned stationary vector $\pi$ satisfies $\|\pi P - \pi\|_\infty \le \varepsilon$.
+* **Stationary Eigen-Identity:** Every returned stationary vector $\pi$ satisfies $\|\pi P - \pi\|_1 \le \varepsilon$ and $\forall t \ge 1:\; \|\pi P^t - \pi\|_1 \le t\varepsilon$.
 * **Fundamental Matrix Identity:** For ergodic chains, $Z = (I - P + \mathbf{1}\pi)^{-1}$ satisfies $(I - P + \mathbf{1}\pi) Z = I$. For absorbing chains with transient submatrix $Q$, $N = (I - Q)^{-1}$ satisfies $(I - Q) N = I$.
-* **Data Processing Inequality (Entropy Rate):** Under any deterministic state projection $Y_t = \phi(X_t)$, the entropy rate of the reduced process cannot exceed the entropy rate of the fine process: $H(\hat{P}) \le H(P) + \varepsilon$.
+* **Lumpable Data Processing Inequality (Entropy Rate):** Under any strongly lumpable state projection $Y_t = \phi(X_t)$ ($R(P, \mathcal{B}) = 0$), the entropy rate of the reduced Markov process cannot exceed the entropy rate of the fine process: $H(\text{Lump}(P, \mathcal{B})) \le H(P) + \varepsilon$.

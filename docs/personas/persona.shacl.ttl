@@ -1,0 +1,61 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix markov: <https://github.com/stephen-mcelhose/markov/vocab#> .
+
+# =============================================================================
+# Persona Document Shape (type: persona)
+# =============================================================================
+
+markov:PersonaShape
+    a sh:NodeShape ;
+    sh:targetClass markov:Persona ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^urn:markov:persona:[a-z0-9-]+$" ;
+    sh:property [
+        sh:path markov:type ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^persona$" ;
+        sh:message "Persona document frontmatter MUST declare 'type: persona'." ;
+    ] ;
+    sh:property [
+        sh:path markov:title ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minLength 5 ;
+        sh:message "Persona document MUST declare a non-empty title." ;
+    ] ;
+    sh:property [
+        sh:path markov:description ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minLength 15 ;
+        sh:message "Persona document MUST declare a descriptive one-sentence description." ;
+    ] ;
+    sh:property [
+        sh:path markov:stage ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "Dreyfus Stage [1-5]" ;
+        sh:message "Persona document MUST declare a valid Dreyfus skill stage in frontmatter ('stage:')." ;
+    ] ;
+    sh:property [
+        sh:path markov:timestamp ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" ;
+        sh:message "Persona document MUST declare an ISO-8601 UTC timestamp." ;
+    ] ;
+    sh:property [
+        sh:path markov:hasSection ;
+        sh:datatype xsd:string ;
+        sh:minCount 7 ;
+        sh:message "Persona document MUST contain all 7 required sections: Skill Stage, Prior Knowledge, Mental Model & Vocabulary Bridge, Situational Maxims, Tone, Do's & Don'ts, Examples Roadmap, and Sources." ;
+    ] .
