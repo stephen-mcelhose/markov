@@ -5,7 +5,7 @@ A finite-state Markov chain solver, model-reduction, inference, and control libr
 `markov` treats stochastic processes as first-class algebraic objects—combining exact linear-algebraic solvers with principled state-space reduction operators that preserve mathematical invariants.
 
 > [!WARNING]
-> **Charter vs. Reality:** This README serves as the architectural charter and target specification for `markov`. The repository is currently in initial bootstrap (`AGENTS.md` and package layout defined); packages and APIs below are actively being ported from [`catrace`](https://github.com) and implemented.
+> **Charter vs. Reality:** This README serves as the architectural charter and target specification for `markov`. The repository is currently in initial bootstrap (`AGENTS.md` and package layout defined); packages and APIs below are actively being ported from [`catrace`](https://github.com/stephen-mcelhose/catrace) and implemented.
 
 ## Why `markov`?
 
@@ -44,8 +44,8 @@ import (
 	"fmt"
 	"log"
 
-	"://github.com"
-	"://github.com/reduce"
+	"github.com/stephen-mcelhose/markov"
+	"github.com/stephen-mcelhose/markov/reduce"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -86,7 +86,7 @@ func main() {
 
 ## Development & Conventions
 
-Engineering discipline, RFC 2119 testing specs (`pgregory.net/rapid` property tests + table-driven tests), and documentation standards are governed by [AGENTS.md](./AGENTS.md). See [docs/invariants.md](./docs/invariants.md) for the mathematical invariants enforced across packages.
+Engineering discipline, RFC 2119 testing specs (`pgregory.net/rapid` property tests + table-driven tests), and documentation standards are governed by [AGENTS.md](./AGENTS.md). See [docs/invariants/invariants.md](./docs/invariants/invariants.md) for the mathematical invariants enforced across packages.
 
 ## License
 

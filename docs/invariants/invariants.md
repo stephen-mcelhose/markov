@@ -90,5 +90,3 @@ where $\mathcal{B}|_A$ is the restriction of $\mathcal{B}$ to the blocks indexed
 * **Stationary Eigen-Identity:** Every returned stationary vector $\pi$ satisfies $\|\pi P - \pi\|_\infty \le \varepsilon$.
 * **Fundamental Matrix Identity:** For ergodic chains, $Z = (I - P + \mathbf{1}\pi)^{-1}$ satisfies $(I - P + \mathbf{1}\pi) Z = I$. For absorbing chains with transient submatrix $Q$, $N = (I - Q)^{-1}$ satisfies $(I - Q) N = I$.
 * **Data Processing Inequality (Entropy Rate):** Under any deterministic state projection $Y_t = \phi(X_t)$, the entropy rate of the reduced process cannot exceed the entropy rate of the fine process: $H(\hat{P}) \le H(P) + \varepsilon$.
-Use code with caution.
-Ready for the repository organization discussion whenever you are—let me know what directories, Makefile targets, runbook templates, or skills you want to structure next!
