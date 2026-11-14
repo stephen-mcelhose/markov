@@ -1,5 +1,16 @@
 # Agent Handoff — markov implementation
 
+## Goal
+
+**Read `README.md` first.** It is the architectural charter, not documentation. The goal in one sentence: a first-class Go library for finite-state Markov chain analysis combining exact linear-algebraic solvers with principled state-space reduction that preserves mathematical invariants — with dual ergonomics (methods + top-level functions) throughout.
+
+The README's "Target Usage" code block (Group 0 + Group 1 exercising `NewKernel`, `IsStronglyLumpable`, `Lump`, `Trace`) is the **acceptance test for Groups 0 and 1**. It must compile and produce correct output before those groups are considered done.
+
+**Known README bugs to fix during Group 0/1:**
+- Import paths are broken (`"://github.com"`) — replace with real module path `github.com/stephen-mcelhose/markov` and `github.com/stephen-mcelhose/markov/reduce`
+- `catrace` link in README points to `https://github.com` — fix to `https://github.com/stephen-mcelhose/catrace`
+- `docs/invariants.md` link is wrong — actual path is `docs/invariants/invariants.md`
+
 ## Repo
 
 `github.com/stephen-mcelhose/markov` — a first-class Go Markov chain analysis library.
@@ -7,21 +18,31 @@ Working branch: `feat/wiki-knowledge-base` (PR #1, open). Merge when you are don
 
 ## State of play
 
-- `AGENTS.md`, `README.md`, `Makefile`, `go.mod/sum`, `docs/invariants.md`, `.github/CODEOWNERS` — committed on `main`
+- `AGENTS.md`, `README.md`, `Makefile`, `go.mod/sum`, `docs/invariants/invariants.md`, `.github/CODEOWNERS` — committed on `main`
 - `wiki/` — 31 pages ingested (math, decisions, api, practice). **Read `wiki/decisions/surface-design.md` before writing any code.** It is the canonical API surface with every exported symbol and formula.
 - `wiki/decisions/origin-and-design-lineage.md` — explains why this repo exists and all API principles.
 - `wiki/decisions/lumpability-implementation-and-state-reduction-debate.md` — contains full reference implementations of `lump.go` and `lump_test.go` from catrace issue #59. **Start here for `reduce/`.**
+- `docs/invariants/invariants.md` — the authoritative algebraic invariant spec. Property tests (pgregory.net/rapid) MUST assert these invariants. Read it before writing any property test.
 - No `.go` source files exist yet. The repo is a clean slate.
+- `LICENSE` file is missing — add MIT license as part of Group 0.
 
 ## Reference implementations
 
+catrace is a **proven, working implementation**. It is not gospel — follow the conventions established here — but it is an excellent baseline. Read the relevant catrace source before writing each group, not after.
+
 - `catrace` repo: `gh api repos/stephen-mcelhose/catrace/contents/<file> --jq '.content' | base64 -d`
-  - `kernel.go`, `trace.go`, `stationary.go`, `passage.go`, `graph.go`, `analysis.go`, `stream/estimator.go`
+  - `kernel.go` → Group 0 `kernel.go`
+  - `trace.go` → Group 1 `reduce/trace.go` (and helpers: `submatrix`, `complementIndices`, `sortedCopy`)
+  - `stationary.go` → Group 2 `solve/stationary.go`
+  - `passage.go` → Group 2 `solve/mfpt.go`
+  - `graph.go` → Group 2 `solve/classes.go`
+  - `analysis.go` → Group 2 `solve/entropy.go`, `solve/fundamental.go`
+  - `stream/estimator.go` → Group 3 `infer/estimate.go`
 - `catrace issue #59`: `gh issue view 59 --repo stephen-mcelhose/catrace --comments`
-  - Comment 2: `lump.go` + `lump_test.go` (methods + top-level dual surface)
-  - Comment 3: `Partition` as first-class type with methods
-  - Comment 4: dual functional/method API examples
-- catrace patterns are reference, **not gospel**. Follow the conventions established here (see AGENTS.md).
+  - Comment 2: complete `lump.go` + `lump_test.go` → Group 1 `reduce/lump.go`
+  - Comment 3: `Partition` as first-class type with methods → Group 0 `partition.go`
+  - Comment 4: dual functional/method API examples → all groups
+- catrace has **no equivalent** for: `reduce/bisim.go`, `infer/order.go`, `control/` — these are net-new.
 
 ## Process (from AGENTS.md)
 
@@ -53,9 +74,11 @@ For each work group below:
 
 ### Group 0 — Root scaffolding (prerequisite for everything)
 
-**Files:** `errors.go`, `doc.go`, `kernel.go`, `distribution.go`, `partition.go`
+**Files:** `errors.go`, `doc.go`, `kernel.go`, `distribution.go`, `partition.go`, `LICENSE`
 
 These are the domain types. Everything else depends on them. Do this group first, on its own branch.
+
+**Before writing:** read catrace `kernel.go` (for `Kernel`, `NormalizeRows`, `Submatrix`, `Multiply`, `LeftAction`) and catrace issue #59 comment 3 (for `Partition` as first-class type with `IndicatorMatrix`, `DistributorMatrix`). These are proven implementations — adapt them to this repo's conventions, don't start from scratch.
 
 **Exported errors (errors.go):**
 ```go
@@ -122,7 +145,7 @@ DistributorMatrix(p, n, weights, tol) (*mat.Dense, error) // top-level
 
 **Files:** `reduce/doc.go`, `reduce/trace.go`, `reduce/lump.go`, `reduce/bisim.go`
 
-**Reference:** catrace `trace.go` (for Trace), catrace issue #59 comment 2 & 3 (for Lump), wiki `math/paige-tarjan-algorithm.md` (for CoarsestPartition).
+**Before writing:** read catrace `trace.go` in full — it is the proven Trace implementation including the block matrix decomposition, the `(I-c)⁻¹` solve, and all edge-case handling. For Lump, read catrace issue #59 comment 2 in full — it is a complete, tested `lump.go` with the exact dual-surface API this library uses. `bisim.go` has no catrace equivalent; use wiki `math/paige-tarjan-algorithm.md` and `math/bisimulation.md`.
 
 **trace.go surface:**
 ```
@@ -267,6 +290,36 @@ MDPBisimulation(m, tol) (markov.Partition, error) // top-level
 - Property: `ValueIteration` and `PolicyIteration` produce same optimal value function on randomly generated MDPs
 
 ---
+
+## Gaps vs. README goal
+
+The README promises two things beyond basic correctness:
+
+1. **Dual ergonomics** — every operator as method AND top-level function. The phase plan covers this per group, but it must be verified end-to-end: the README Target Usage example exercises the full chain (`NewKernel` → `IsStronglyLumpable` → `Lump` → `Trace`). That example should become a runnable `Example_readme()` test in `reduce/reduce_test.go` or a top-level `example_test.go`.
+
+2. **Principled, auditable compression** — reduction operators either guarantee exact preservation or expose residual/information-loss metrics. The audit surface is `LumpabilityResidual` (how far from strongly lumpable) and the data-processing inequality for entropy (`H(P̂) ≤ H(P)`, invariant §4.2 in `docs/invariants/invariants.md`). This must be property-tested in Group 1 + Group 2 respectively.
+
+**Phase gaps not yet covered:**
+
+| Gap | Where to address |
+| --- | ---------------- |
+| `LICENSE` file missing | Group 0 |
+| README broken import paths | Group 0/1 (fix when module first compiles) |
+| README broken catrace link | Group 0 (cosmetic fix, any time) |
+| `docs/invariants.md` → `docs/invariants/invariants.md` link in README | Group 0 (cosmetic fix) |
+| `docs/invariants/invariants.md` has stray AI artifact on last 2 lines | Fix immediately — remove "Use code with caution..." lines |
+| README Target Usage as runnable example | Group 1 completion gate |
+| Data-processing inequality property test (`H(P̂) ≤ H(P)`) | Group 2 (`solve/entropy_test.go`) |
+| Cross-package invariant §4.1 (Lump∘Trace = Trace∘Lump) | Group 1, but needs `solve.Stationary` for full verification — revisit in Group 2 |
+| `control/` has no catrace reference — highest uncertainty | Group 4; consider a planning pass before implementing |
+
+**Not in scope for any group (known unknowns from surface-design.md):**
+- Sparse matrix support (deferred to v2)
+- Continuous-time generator / uniformization (separate `ctmc` package, not this repo)
+- Average-reward (undiscounted) MDP solver
+- PCCA+, Simon-Ando NCD decomposition
+- Continuous bisimulation metrics (Kantorovich/Wasserstein)
+- Higher-order Markov lifting in `infer/`
 
 ## Commit conventions
 
