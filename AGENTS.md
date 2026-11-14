@@ -51,6 +51,46 @@ Fuzzing, or mathematical mutation testing, should be used to test the robustness
 4. Examples MAY be deferred until a second-phase documentation pass.
 
 
+## Knowledge Base (Wiki)
+
+The repo maintains a compounding knowledge base in `docs/wiki/` following the llm-wiki pattern.
+Raw import sources live in `raw/imports/urls.md` (one URL per line; `#` lines are comments).
+
+### Structure
+
+```
+docs/wiki/
+├── AGENTS.md        # wiki schema and domain definition
+├── index.md         # catalog of all pages (updated on every write)
+├── log.md           # append-only operation log
+├── math/            # mathematical foundations and algorithm pages
+├── practice/        # practitioner context and usage patterns
+├── decisions/       # API and architectural decisions (ADRs)
+└── api/             # surface area rationale per subpackage
+
+raw/
+└── imports/
+    └── urls.md      # line-delimited URL import list
+```
+
+### Rules
+
+1. **Raw sources are immutable.** Read `raw/imports/urls.md` and fetched URLs; never write to them.
+2. **Ingest produces a wiki page.** For each source: fetch, synthesize a `docs/wiki/<group>/kebab-title.md` page with OKF frontmatter (`type`, `title`, `description`, `timestamp`, optional `resource`/`tags`), propagate insights to related pages, update `docs/wiki/index.md`, append to `docs/wiki/log.md`.
+3. **Batch ingest.** When asked to ingest `raw/imports/urls.md`, process every non-comment line.
+4. **Synthesize, don't transcribe.** Pages integrate and cross-reference; they do not copy sources verbatim.
+5. **Index is always current.** Every wiki write MUST update `docs/wiki/index.md` before finishing.
+6. **Log is append-only.** Format: `## [YYYY-MM-DD] <operation> | <detail>`. Never delete entries.
+7. **Cross-references** use standard relative markdown links from the linking file. Never `[[wikilinks]]`.
+
+### Operations
+
+- `ingest <url>` — fetch, synthesize, propagate, update index + log
+- `ingest raw/imports/urls.md` — batch ingest all URLs
+- `query <question>` — synthesize answer from wiki pages; write back novel synthesis
+- `lint` — audit orphans, contradictions, stale claims, missing OKF frontmatter
+
+
 ## Group Definition of Done
 
 Before committing or starting the next work group, every change MUST pass the following validation pipeline in order:
