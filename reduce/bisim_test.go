@@ -5,6 +5,8 @@ import (
 
 	"github.com/stephen-mcelhose/markov"
 	"github.com/stephen-mcelhose/markov/reduce"
+	"gonum.org/v1/gonum/mat"
+	"pgregory.net/rapid"
 )
 
 func TestCoarsestPartition(t *testing.T) {
@@ -204,4 +206,81 @@ func TestAreBisimilar(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Property: CoarsestPartition is a fixed point — applying it again yields the same number of blocks.
+func TestProperty_Bisim_CoarsestPartitionStable(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(3, 6).Draw(t, "n")
+		data := make([]float64, n*n)
+		for i := 0; i < n; i++ {
+			sum := 0.0
+			for j := 0; j < n; j++ {
+				v := rapid.Float64Range(0.01, 1.0).Draw(t, "p")
+				data[i*n+j] = v
+				sum += v
+			}
+			for j := 0; j < n; j++ {
+				data[i*n+j] /= sum
+			}
+		}
+		k, err := markov.NewKernel(mat.NewDense(n, n, data), nil)
+		if err != nil {
+			t.Skip()
+		}
+		b1, err := reduce.CoarsestPartition(k, nil, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		ok, err := reduce.IsStronglyLumpable(k, b1, 1e-9)
+		if err != nil || !ok {
+			t.Errorf("CoarsestPartition result is not strongly lumpable: ok=%v err=%v", ok, err)
+		}
+		b2, err := reduce.CoarsestPartition(k, b1, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		if len(b1) != len(b2) {
+			t.Errorf("CoarsestPartition not stable: first=%d blocks, second=%d blocks", len(b1), len(b2))
+		}
+	})
+}
+
+// Property: a kernel is bisimilar to its own quotient under the coarsest partition.
+func TestProperty_Bisim_AreBisimilarLumpedFixed(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(3, 5).Draw(t, "n")
+		data := make([]float64, n*n)
+		for i := 0; i < n; i++ {
+			sum := 0.0
+			for j := 0; j < n; j++ {
+				v := rapid.Float64Range(0.01, 1.0).Draw(t, "p")
+				data[i*n+j] = v
+				sum += v
+			}
+			for j := 0; j < n; j++ {
+				data[i*n+j] /= sum
+			}
+		}
+		k, err := markov.NewKernel(mat.NewDense(n, n, data), nil)
+		if err != nil {
+			t.Skip()
+		}
+		b, err := reduce.CoarsestPartition(k, nil, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		lumped, err := reduce.Lump(k, b, nil, nil, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		sim, err := reduce.AreBisimilar(k, lumped, 1e-9)
+		if err != nil {
+			t.Errorf("AreBisimilar error: %v", err)
+			return
+		}
+		if !sim {
+			t.Errorf("kernel not bisimilar to its coarsest-partition lump")
+		}
+	})
 }

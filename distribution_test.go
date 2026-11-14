@@ -352,7 +352,7 @@ func TestTopLevelDistributionFunctions(t *testing.T) {
 }
 
 // Property: Restrict output always sums to 1 for any valid distribution and non-zero subset.
-func TestDistributionPropertyRestrictSumsToOne(t *testing.T) {
+func TestProperty_1_2_RestrictSumsToOne(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		n := rapid.IntRange(2, 8).Draw(t, "n")
 		d := validDistribution(n).Draw(t, "d")
@@ -410,7 +410,7 @@ func TestDistributionPropertyRestrictSumsToOne(t *testing.T) {
 }
 
 // Property: Project output always sums to 1 for any valid distribution and valid partition.
-func TestDistributionPropertyProjectSumsToOne(t *testing.T) {
+func TestProperty_1_2_ProjectSumsToOne(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		n := rapid.IntRange(2, 8).Draw(t, "n")
 		d := validDistribution(n).Draw(t, "d")

@@ -649,3 +649,62 @@ func TestSolveProperties(t *testing.T) {
 		}
 	})
 }
+
+// Property: H(Lump(P,B)) <= H(P) + 1e-7 under strong lumpability (data-processing inequality).
+func TestProperty_4_2_EntropyRateDPI(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(4, 8).Draw(t, "n")
+		m := rapid.IntRange(2, 3).Draw(t, "m")
+		if m > n {
+			t.Skip()
+		}
+		// Build strongly lumpable kernel inline (same construction as lump_test.go).
+		qData := make([]float64, m*m)
+		for i := 0; i < m; i++ {
+			sum := 0.0
+			for j := 0; j < m; j++ {
+				v := rapid.Float64Range(0.05, 1.0).Draw(t, "q")
+				qData[i*m+j] = v
+				sum += v
+			}
+			for j := 0; j < m; j++ {
+				qData[i*m+j] /= sum
+			}
+		}
+		blockSize := make([]int, m)
+		for s := 0; s < n; s++ {
+			blockSize[s%m]++
+		}
+		p := make(markov.Partition, m)
+		for s := 0; s < n; s++ {
+			p[s%m] = append(p[s%m], s)
+		}
+		pData := make([]float64, n*n)
+		for s := 0; s < n; s++ {
+			bi := s % m
+			for tt := 0; tt < n; tt++ {
+				bj := tt % m
+				pData[s*n+tt] = qData[bi*m+bj] / float64(blockSize[bj])
+			}
+		}
+		k, err := markov.NewKernel(mat.NewDense(n, n, pData), nil)
+		if err != nil {
+			t.Skip()
+		}
+		hP, err := solve.EntropyRate(k, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		lumped, err := reduce.Lump(k, p, nil, nil, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		hLumped, err := solve.EntropyRate(lumped, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		if hLumped > hP+1e-7 {
+			t.Errorf("entropy DPI violated: H(Lump)=%g > H(P)=%g", hLumped, hP)
+		}
+	})
+}

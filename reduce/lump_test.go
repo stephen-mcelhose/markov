@@ -2,10 +2,12 @@ package reduce_test
 
 import (
 	"math"
+	"sort"
 	"testing"
 
 	"github.com/stephen-mcelhose/markov"
 	"github.com/stephen-mcelhose/markov/reduce"
+	"github.com/stephen-mcelhose/markov/solve"
 	"gonum.org/v1/gonum/mat"
 	"pgregory.net/rapid"
 )
@@ -419,7 +421,7 @@ func TestLumpTraceCommutativity(t *testing.T) {
 }
 
 // Property: Lump produces a row-stochastic kernel for any valid partition.
-func TestLumpPropertyRowStochastic(t *testing.T) {
+func TestProperty_3_1_3_2_LumpRowStochastic(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		n := rapid.IntRange(2, 6).Draw(t, "n")
 		data := make([]float64, n*n)
@@ -457,6 +459,221 @@ func TestLumpPropertyRowStochastic(t *testing.T) {
 		}
 		if err := lumped.Validate(1e-6); err != nil {
 			t.Errorf("lumped kernel not stochastic: %v", err)
+		}
+	})
+}
+
+// stronglyLumpableKernel generates a random n-state strongly lumpable kernel with m blocks.
+// All rows within a block have identical distributions over other blocks.
+func stronglyLumpableKernel(t *rapid.T, n, m int) (*markov.Kernel, markov.Partition) {
+	// Build quotient kernel Q: m×m row-stochastic.
+	qData := make([]float64, m*m)
+	for i := 0; i < m; i++ {
+		sum := 0.0
+		for j := 0; j < m; j++ {
+			v := rapid.Float64Range(0.05, 1.0).Draw(t, "q")
+			qData[i*m+j] = v
+			sum += v
+		}
+		for j := 0; j < m; j++ {
+			qData[i*m+j] /= sum
+		}
+	}
+	// Count block sizes (round-robin assignment: state s belongs to block s%m).
+	blockSize := make([]int, m)
+	for s := 0; s < n; s++ {
+		blockSize[s%m]++
+	}
+	// Build partition.
+	p := make(markov.Partition, m)
+	for s := 0; s < n; s++ {
+		p[s%m] = append(p[s%m], s)
+	}
+	// Build P: P[s, t] = Q[blockOf[s], blockOf[t]] / blockSize[blockOf[t]].
+	pData := make([]float64, n*n)
+	for s := 0; s < n; s++ {
+		bi := s % m
+		for t := 0; t < n; t++ {
+			bj := t % m
+			pData[s*n+t] = qData[bi*m+bj] / float64(blockSize[bj])
+		}
+	}
+	k, err := markov.NewKernel(mat.NewDense(n, n, pData), nil)
+	if err != nil {
+		t.Skip()
+	}
+	return k, p
+}
+
+// Property: Lump result is invariant to U weights under strong lumpability.
+func TestProperty_3_3_DistributorWeightInvariance(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(4, 8).Draw(t, "n")
+		m := rapid.IntRange(2, 3).Draw(t, "m")
+		if m > n {
+			t.Skip()
+		}
+		k, p := stronglyLumpableKernel(t, n, m)
+		// Lump with uniform weights (nil).
+		uniform, err := reduce.Lump(k, p, nil, nil, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		// Lump with random positive weights.
+		weights := make(markov.Distribution, n)
+		sum := 0.0
+		for i := range weights {
+			weights[i] = rapid.Float64Range(0.1, 10.0).Draw(t, "w")
+			sum += weights[i]
+		}
+		for i := range weights {
+			weights[i] /= sum
+		}
+		weighted, err := reduce.Lump(k, p, nil, weights, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		for i := 0; i < m; i++ {
+			for j := 0; j < m; j++ {
+				if math.Abs(uniform.P.At(i, j)-weighted.P.At(i, j)) > 1e-6 {
+					t.Errorf("weight invariance failed at (%d,%d): uniform=%g weighted=%g", i, j, uniform.P.At(i, j), weighted.P.At(i, j))
+				}
+			}
+		}
+	})
+}
+
+// Property: P^t V = V P̂^t for t=2,3 (multi-step Chapman-Kolmogorov commutation).
+func TestProperty_3_4_MultiStepChapmanKolmogorov(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(4, 8).Draw(t, "n")
+		m := rapid.IntRange(2, 3).Draw(t, "m")
+		if m > n {
+			t.Skip()
+		}
+		k, p := stronglyLumpableKernel(t, n, m)
+		lumped, err := reduce.Lump(k, p, nil, nil, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		V, err := p.IndicatorMatrix(n)
+		if err != nil {
+			t.Skip()
+		}
+		for _, steps := range []int{2, 3} {
+			var Pk, Phatk mat.Dense
+			Pk.Pow(k.P, steps)
+			Phatk.Pow(lumped.P, steps)
+			// LHS = P^t * V  (n×m)
+			var lhs mat.Dense
+			lhs.Mul(&Pk, V)
+			// RHS = V * P̂^t  (n×m)
+			var rhs mat.Dense
+			rhs.Mul(V, &Phatk)
+			for i := 0; i < n; i++ {
+				for j := 0; j < m; j++ {
+					if math.Abs(lhs.At(i, j)-rhs.At(i, j)) > 1e-6 {
+						t.Errorf("C-K step=%d at (%d,%d): P^t*V=%g, V*P̂^t=%g", steps, i, j, lhs.At(i, j), rhs.At(i, j))
+					}
+				}
+			}
+		}
+	})
+}
+
+// Property: π̂ P̂ = π̂ (projected stationary is stationary for the lumped chain).
+func TestProperty_3_5_StationaryProjection(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(4, 8).Draw(t, "n")
+		m := rapid.IntRange(2, 3).Draw(t, "m")
+		if m > n {
+			t.Skip()
+		}
+		k, p := stronglyLumpableKernel(t, n, m)
+		pi, err := solve.Stationary(k, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		piHat, err := pi.Project(p, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		lumped, err := reduce.Lump(k, p, nil, nil, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		for j := 0; j < m; j++ {
+			var s float64
+			for i := 0; i < m; i++ {
+				s += piHat[i] * lumped.P.At(i, j)
+			}
+			if math.Abs(s-piHat[j]) > 1e-6 {
+				t.Errorf("stationary projection: (π̂*P̂)[%d] = %g, want %g", j, s, piHat[j])
+			}
+		}
+	})
+}
+
+// Property: Trace(Lump(P,B), I) = Lump(Trace(P,A), B|_A) where A = union of blocks in I.
+func TestProperty_4_1_SpatialTemporalCommutativity(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(6, 9).Draw(t, "n")
+		m := rapid.IntRange(3, 4).Draw(t, "m")
+		if m > n {
+			t.Skip()
+		}
+		k, p := stronglyLumpableKernel(t, n, m)
+		// Choose a strict subset I of block indices.
+		iLen := rapid.IntRange(1, m-1).Draw(t, "iLen")
+		// I = first iLen block indices.
+		// A = union of states in those blocks.
+		var A []int
+		for _, s := range p[:iLen] {
+			A = append(A, s...)
+		}
+		// Trace canonicalizes (sorts) A internally; build the index map on sorted A.
+		sortedA := make([]int, len(A))
+		copy(sortedA, A)
+		sort.Ints(sortedA)
+		aIdx := make(map[int]int, len(sortedA))
+		for i, s := range sortedA {
+			aIdx[s] = i
+		}
+		// LHS: Lump(P, B) then Trace on block indices [0..iLen-1].
+		lumped, err := reduce.Lump(k, p, nil, nil, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		macroSubset := make([]int, iLen)
+		for i := range macroSubset {
+			macroSubset[i] = i
+		}
+		lhs, err := reduce.Trace(lumped, macroSubset, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		// RHS: Trace(P, A) then Lump on B restricted to A.
+		traced, err := reduce.Trace(k, A, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		// Restricted partition: same first iLen blocks, states re-indexed to sorted A positions.
+		restrictedP := make(markov.Partition, iLen)
+		for bi := 0; bi < iLen; bi++ {
+			for _, s := range p[bi] {
+				restrictedP[bi] = append(restrictedP[bi], aIdx[s])
+			}
+		}
+		rhs, err := reduce.Lump(traced, restrictedP, nil, nil, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		for i := 0; i < iLen; i++ {
+			for j := 0; j < iLen; j++ {
+				if math.Abs(lhs.P.At(i, j)-rhs.P.At(i, j)) > 1e-6 {
+					t.Errorf("spatial-temporal commutativity at (%d,%d): LHS=%g RHS=%g", i, j, lhs.P.At(i, j), rhs.P.At(i, j))
+				}
+			}
 		}
 	})
 }

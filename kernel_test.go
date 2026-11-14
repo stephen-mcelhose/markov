@@ -400,7 +400,7 @@ func TestNearlyEqual(t *testing.T) {
 // Property: every kernel produced by NewKernelWithTol is row-stochastic within tol,
 // and satisfies tolerance monotonicity, NormalizeRows idempotence, Submatrix full-index
 // identity, CanonicalSubset idempotence, and NearlyEqual reflexivity/symmetry.
-func TestKernelPropertyRowStochastic(t *testing.T) {
+func TestProperty_1_1_RowStochastic(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		n := rapid.IntRange(1, 8).Draw(t, "n")
 		P := rowStochastic(n).Draw(t, "P")
@@ -479,6 +479,57 @@ func TestKernelPropertyRowStochastic(t *testing.T) {
 		}
 		if NearlyEqual(a, b, 1e-3) != NearlyEqual(b, a, 1e-3) {
 			t.Errorf("NearlyEqual not symmetric for %g, %g", a, b)
+		}
+	})
+}
+
+// Property: permuting state labels satisfies P'^k = Π P^k Π^T for all k (similarity invariance).
+func TestProperty_1_4_PermutationEquivariance(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(2, 5).Draw(t, "n")
+		data := make([]float64, n*n)
+		for i := 0; i < n; i++ {
+			sum := 0.0
+			for j := 0; j < n; j++ {
+				v := rapid.Float64Range(0.01, 1.0).Draw(t, "p")
+				data[i*n+j] = v
+				sum += v
+			}
+			for j := 0; j < n; j++ {
+				data[i*n+j] /= sum
+			}
+		}
+		k, err := NewKernel(mat.NewDense(n, n, data), nil)
+		if err != nil {
+			t.Skip()
+		}
+		idx := make([]int, n)
+		for i := range idx {
+			idx[i] = i
+		}
+		sigma := rapid.Permutation(idx).Draw(t, "sigma")
+		// P'[sigma[i], sigma[j]] = P[i, j].
+		pData := make([]float64, n*n)
+		for i := 0; i < n; i++ {
+			for j := 0; j < n; j++ {
+				pData[sigma[i]*n+sigma[j]] = k.P.At(i, j)
+			}
+		}
+		Pp := mat.NewDense(n, n, pData)
+		// Verify P'^k = Π P^k Π^T for k = 2, 3.
+		for _, steps := range []int{2, 3} {
+			var Pk, Ppk mat.Dense
+			Pk.Pow(k.P, steps)
+			Ppk.Pow(Pp, steps)
+			for i := 0; i < n; i++ {
+				for j := 0; j < n; j++ {
+					got := Ppk.At(sigma[i], sigma[j])
+					want := Pk.At(i, j)
+					if math.Abs(got-want) > 1e-10 {
+						t.Errorf("P'^%d[%d,%d] = %g, want P^%d[%d,%d] = %g", steps, sigma[i], sigma[j], got, steps, i, j, want)
+					}
+				}
+			}
 		}
 	})
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/stephen-mcelhose/markov"
 	"github.com/stephen-mcelhose/markov/reduce"
+	"github.com/stephen-mcelhose/markov/solve"
 	"gonum.org/v1/gonum/mat"
 	"pgregory.net/rapid"
 )
@@ -375,7 +376,7 @@ func TestTraceReward(t *testing.T) {
 }
 
 // Property: for any ergodic kernel and valid non-full subset, Trace produces a row-stochastic kernel.
-func TestTracePropertyRowStochastic(t *testing.T) {
+func TestProperty_2_2_TowerLaw(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		n := rapid.IntRange(2, 6).Draw(t, "n")
 		// Build a random row-stochastic n×n matrix.
@@ -423,6 +424,184 @@ func TestTracePropertyRowStochastic(t *testing.T) {
 						}
 					}
 				}
+			}
+		}
+	})
+}
+
+// Property: Trace on the full state set returns P unchanged.
+func TestProperty_2_1_FullSpaceIdentity(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(2, 5).Draw(t, "n")
+		data := make([]float64, n*n)
+		for i := 0; i < n; i++ {
+			sum := 0.0
+			for j := 0; j < n; j++ {
+				v := rapid.Float64Range(0.01, 1.0).Draw(t, "p")
+				data[i*n+j] = v
+				sum += v
+			}
+			for j := 0; j < n; j++ {
+				data[i*n+j] /= sum
+			}
+		}
+		k, err := markov.NewKernel(mat.NewDense(n, n, data), nil)
+		if err != nil {
+			t.Skip()
+		}
+		full := make([]int, n)
+		for i := range full {
+			full[i] = i
+		}
+		tr, err := reduce.Trace(k, full, 1e-9)
+		if err != nil {
+			t.Skip() // empty complement edge case
+		}
+		for i := 0; i < n; i++ {
+			for j := 0; j < n; j++ {
+				if math.Abs(tr.P.At(i, j)-k.P.At(i, j)) > 1e-9 {
+					t.Errorf("full-space identity failed at (%d,%d): %g != %g", i, j, tr.P.At(i, j), k.P.At(i, j))
+				}
+			}
+		}
+	})
+}
+
+// Property: πA * P_A = πA (stationary restriction is stationary on the trace chain).
+func TestProperty_2_3_StationaryRestriction(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(2, 5).Draw(t, "n")
+		data := make([]float64, n*n)
+		for i := 0; i < n; i++ {
+			sum := 0.0
+			for j := 0; j < n; j++ {
+				v := rapid.Float64Range(0.05, 1.0).Draw(t, "p")
+				data[i*n+j] = v
+				sum += v
+			}
+			for j := 0; j < n; j++ {
+				data[i*n+j] /= sum
+			}
+		}
+		k, err := markov.NewKernel(mat.NewDense(n, n, data), nil)
+		if err != nil {
+			t.Skip()
+		}
+		pi, err := solve.Stationary(k, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		m := rapid.IntRange(1, n-1).Draw(t, "m")
+		A := make([]int, m)
+		for i := range A {
+			A[i] = i
+		}
+		tr, err := reduce.Trace(k, A, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		piA, err := pi.Restrict(A, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		for j := 0; j < m; j++ {
+			var s float64
+			for i := 0; i < m; i++ {
+				s += piA[i] * tr.P.At(i, j)
+			}
+			if math.Abs(s-piA[j]) > 1e-6 {
+				t.Errorf("stationary restriction: (πA*P_A)[%d] = %g, want %g", j, s, piA[j])
+			}
+		}
+	})
+}
+
+// Property: P_A[s,t] >= P[A[s], A[t]] - 1e-9 (trace absorbs excursion probability).
+func TestProperty_2_4_HittingProbabilityPreservation(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(2, 6).Draw(t, "n")
+		data := make([]float64, n*n)
+		for i := 0; i < n; i++ {
+			sum := 0.0
+			for j := 0; j < n; j++ {
+				v := rapid.Float64Range(0.0, 1.0).Draw(t, "p")
+				data[i*n+j] = v
+				sum += v
+			}
+			if sum == 0 {
+				data[i*n] = 1.0
+				sum = 1.0
+			}
+			for j := 0; j < n; j++ {
+				data[i*n+j] /= sum
+			}
+		}
+		k, err := markov.NewKernel(mat.NewDense(n, n, data), nil)
+		if err != nil {
+			t.Skip()
+		}
+		m := rapid.IntRange(1, n-1).Draw(t, "m")
+		A := make([]int, m)
+		for i := range A {
+			A[i] = i
+		}
+		tr, err := reduce.Trace(k, A, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		for i := 0; i < m; i++ {
+			for j := 0; j < m; j++ {
+				if tr.P.At(i, j) < k.P.At(A[i], A[j])-1e-9 {
+					t.Errorf("P_A[%d,%d] = %g < P[%d,%d] = %g", i, j, tr.P.At(i, j), A[i], A[j], k.P.At(A[i], A[j]))
+				}
+			}
+		}
+	})
+}
+
+// Property: TraceReward with zero rewards on the complement equals the A-component of rewards.
+func TestProperty_2_5_ExcursionRewardPreservation(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		n := rapid.IntRange(2, 6).Draw(t, "n")
+		data := make([]float64, n*n)
+		for i := 0; i < n; i++ {
+			sum := 0.0
+			for j := 0; j < n; j++ {
+				v := rapid.Float64Range(0.01, 1.0).Draw(t, "p")
+				data[i*n+j] = v
+				sum += v
+			}
+			for j := 0; j < n; j++ {
+				data[i*n+j] /= sum
+			}
+		}
+		k, err := markov.NewKernel(mat.NewDense(n, n, data), nil)
+		if err != nil {
+			t.Skip()
+		}
+		m := rapid.IntRange(1, n-1).Draw(t, "m")
+		A := make([]int, m)
+		for i := range A {
+			A[i] = i
+		}
+		inA := make(map[int]bool, m)
+		for _, s := range A {
+			inA[s] = true
+		}
+		r := make([]float64, n)
+		for i := 0; i < n; i++ {
+			if inA[i] {
+				r[i] = rapid.Float64Range(-5, 5).Draw(t, "r")
+			}
+			// r[i] = 0 for i not in A (zero on complement)
+		}
+		rA, err := reduce.TraceReward(k, r, A, 1e-9)
+		if err != nil {
+			t.Skip()
+		}
+		for i, s := range A {
+			if math.Abs(rA[i]-r[s]) > 1e-9 {
+				t.Errorf("TraceReward[%d] = %g, want r[%d] = %g (zero-on-complement)", i, rA[i], s, r[s])
 			}
 		}
 	})

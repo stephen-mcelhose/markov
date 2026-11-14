@@ -332,7 +332,7 @@ func TestTopLevelPartitionFunctions(t *testing.T) {
 }
 
 // Property (invariant §1.3): U·V = Iₘ for any valid partition and uniform weights.
-func TestPartitionPropertyUVEqualsIdentity(t *testing.T) {
+func TestProperty_1_3_UVEqualsIdentityUniform(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		n := rapid.IntRange(2, 8).Draw(t, "n")
 		indices := make([]int, n)
@@ -350,7 +350,7 @@ func TestPartitionPropertyUVEqualsIdentity(t *testing.T) {
 }
 
 // Property: U·V = Iₘ also holds for arbitrary non-negative weights.
-func TestPartitionPropertyUVEqualsIdentityWeighted(t *testing.T) {
+func TestProperty_1_3_UVEqualsIdentityWeighted(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		n := rapid.IntRange(2, 8).Draw(t, "n")
 		indices := make([]int, n)

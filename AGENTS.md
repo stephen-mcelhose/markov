@@ -28,6 +28,7 @@ Test should be written for all public functions and methods.
 4. MUST NOT use RFC2119 language for non-specable behaviors (e.g. examples, fuzzing, etc.)
 5. MUST NOT name test functions using RFC2119 language (only testCase.name and/or t.Run(<name>))
 6. Property-based tests SHOULD use pgregory.net/rapid with custom generators (e.g., row-stochastic kernels, partitions, strongly lumpable kernels) to verify algebraic invariants across randomized inputs and automatically minimize failing counterexamples, and MAY wrap generators with rapid.MakeFuzz for native go test -fuzz integration.
+7. Every invariant listed in `docs/invariants/invariants.md` MUST have at least one corresponding `rapid.Check` property test. Property tests MUST be named `TestProperty_<SectionID>_<Name>` (e.g., `TestProperty_2_3_StationaryRestriction`) so invariant coverage is auditable by grep.
 
 
 ### Fuzzing
@@ -102,7 +103,10 @@ Before committing or starting the next work group, every change MUST pass the fo
    - Verify implemented Go packages match the exact file/symbol signatures in `docs/surface/surface.jsonld`, have `doc.go` and exported symbol comments without raw LaTeX backslashes, keep `func Test*` names free of RFC 2119 keywords, and include situational-maxim comments + `// Output:` blocks on all `func Example*` functions.
 3. **Static Checks, Unit/Property/Example Tests & Spec Report (`make check && make spec`)**:
    - Runs `fmt-check`, `vet`, `surface`, `surface-ast`, `go test -count=1 ./...` (including `pgregory.net/rapid` property checks and `Example*` output assertions), and `./tools/testspec` to verify RFC 2119 specable sub-tests.
-4. **Critic Math & Policy Review**:
+4. **Invariant Coverage Audit**:
+   - Grep `TestProperty_` across all `*_test.go` files and cross-reference against every invariant section in `docs/invariants/invariants.md`. Every numbered invariant MUST have a matching `TestProperty_<SectionID>_<Name>` test. Missing coverage is a BLOCKING finding.
+5. **Critic Math & Policy Review**:
+   - Explicitly reference `docs/invariants/invariants.md` in the critic prompt.
    - Spawn a `critic` agent to math-review and policy-review all new or modified files in the completed group against `docs/architecture.md` and `AGENTS.md`. Resolve any BLOCKING findings before proceeding; document ADVISORY ones in context.
 
 ## Self-Maintenance
