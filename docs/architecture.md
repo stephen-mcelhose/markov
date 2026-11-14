@@ -102,7 +102,6 @@ markov/
 ├── AGENTS.md
 ├── doc.go
 ├── errors.go
-│   ├── var ErrUnimplemented error
 │   ├── var ErrNotStochastic error
 │   ├── var ErrInvalidDistribution error
 │   ├── var ErrInvalidPartition error
@@ -604,7 +603,6 @@ Reverse graph traversal (`?symbol markov:references ?err`) showing every domain 
 
 | Sentinel Error | Returning Symbol | Boundary Condition (`err` / `req`) |
 | :--- | :--- | :--- |
-| `ErrUnimplemented` | — | Reserved sentinel error |
 | `ErrNotStochastic` | `markov.NewKernel` | Returns `ErrNotStochastic` on negative entries or row sums outside $1 \pm \varepsilon_0$ |
 | `ErrNotStochastic` | `markov.NewKernelWithTol` | Returns `ErrNotStochastic` if stochasticity fails beyond $\varepsilon$ |
 | `ErrNotStochastic` | `markov.Kernel.NormalizeRows` | Returns `ErrNotStochastic` on negative entries or zero-sum rows |

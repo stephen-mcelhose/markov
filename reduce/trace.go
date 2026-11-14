@@ -224,10 +224,8 @@ func checkExcursionCanReturn(k *markov.Kernel, A, Ac []int, tol float64) error {
 		canReachA[s] = true
 		queue = append(queue, s)
 	}
-	for len(queue) > 0 {
-		v := queue[0]
-		queue = queue[1:]
-		queue = enqueueReachingStates(k, v, canReachA, queue, tol)
+	for head := 0; head < len(queue); head++ {
+		queue = enqueueReachingStates(k, queue[head], canReachA, queue, tol)
 	}
 	for _, s := range Ac {
 		if !canReachA[s] {

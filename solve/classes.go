@@ -214,29 +214,28 @@ func computeComponentPeriod(comp []int, adj [][]int) int {
 	queue := []int{comp[0]}
 	g := 0
 
-	for len(queue) > 0 {
-		u := queue[0]
-		queue = queue[1:]
-		g = visitComponentEdges(u, adj[u], inComp, depth, &queue, g)
+	for head := 0; head < len(queue); head++ {
+		u := queue[head]
+		g, queue = visitComponentEdges(u, adj[u], inComp, depth, queue, g)
 	}
 	return g
 }
 
 // visitComponentEdges inspects outgoing edges from state u within the component,
 // enqueuing unvisited tree edges and accumulating the GCD of cycle chord lengths.
-func visitComponentEdges(u int, neighbors []int, inComp map[int]bool, depth map[int]int, queue *[]int, g int) int {
+func visitComponentEdges(u int, neighbors []int, inComp map[int]bool, depth map[int]int, queue []int, g int) (int, []int) {
 	for _, v := range neighbors {
 		if !inComp[v] {
 			continue
 		}
 		if dv, seen := depth[v]; !seen {
 			depth[v] = depth[u] + 1
-			*queue = append(*queue, v)
+			queue = append(queue, v)
 		} else {
 			g = gcd(g, depth[u]-dv+1)
 		}
 	}
-	return g
+	return g, queue
 }
 
 // gcd returns the non-negative greatest common divisor of a and b.

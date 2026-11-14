@@ -24,7 +24,6 @@
       "partition.go"
     ],
     "errorList": [
-      "ErrUnimplemented",
       "ErrNotStochastic",
       "ErrInvalidDistribution",
       "ErrInvalidPartition",
@@ -40,12 +39,6 @@
       "@type": "File",
       "path": "errors.go",
       "symbols": [
-        {
-          "@id": "urn:markov:sym:markov.ErrUnimplemented",
-          "@type": "Error",
-          "name": "ErrUnimplemented",
-          "signature": "var ErrUnimplemented error"
-        },
         {
           "@id": "urn:markov:sym:markov.ErrNotStochastic",
           "@type": "Error",

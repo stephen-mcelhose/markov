@@ -165,7 +165,7 @@ func TestRunCLI(t *testing.T) {
 				checkSync:   true,
 			},
 			wantCode: 0,
-			wantOut:  "PASS  surface graph valid (5 packages, 22 files, 74 symbols, 80 invariants, 56 sources)",
+			wantOut:  "PASS  surface graph valid (5 packages, 22 files, 73 symbols, 80 invariants, 56 sources)",
 		},
 	}
 

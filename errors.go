@@ -2,9 +2,6 @@ package markov
 
 import "errors"
 
-// ErrUnimplemented is returned when an API stub has not yet been implemented.
-var ErrUnimplemented = errors.New("markov: unimplemented")
-
 // ErrNotStochastic is returned when a matrix fails row-stochasticity validation:
 // some entry is below -tol, or some row sum deviates from 1 by more than tol.
 var ErrNotStochastic = errors.New("markov: matrix is not row-stochastic")

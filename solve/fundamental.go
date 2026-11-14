@@ -122,10 +122,8 @@ func verifyCanReachAbsorbing(k *markov.Kernel, T []int, tol float64) error {
 			queue = append(queue, s)
 		}
 	}
-	for len(queue) > 0 {
-		v := queue[0]
-		queue = queue[1:]
-		queue = enqueuePredecessorsInT(k, v, inT, canExit, queue, tol)
+	for head := 0; head < len(queue); head++ {
+		queue = enqueuePredecessorsInT(k, queue[head], inT, canExit, queue, tol)
 	}
 	for _, s := range T {
 		if !canExit[s] {
