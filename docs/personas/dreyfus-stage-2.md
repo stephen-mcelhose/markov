@@ -4,7 +4,7 @@ title: Dreyfus Stage 2 (Advanced Beginner) Go Engineer
 description: Defines the Advanced Beginner (Dreyfus Stage 2) target persona for markov example_test.go files — combining concrete Go systems stories, situational maxims, and verified // Output: assertions.
 stage: Dreyfus Stage 2 (Advanced Beginner)
 resource: https://en.wikipedia.org/wiki/Dreyfus_model_of_skill_acquisition
-tags: [persona, dreyfus-model, examples, example-test, situational-maxims]
+tags: ['persona', 'dreyfus-model', 'examples', 'example-test', 'situational-maxims']
 timestamp: 2026-11-14T19:08:00Z
 ---
 
