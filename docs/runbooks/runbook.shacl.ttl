@@ -1,0 +1,53 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix markov: <https://github.com/stephen-mcelhose/markov/vocab#> .
+
+# =============================================================================
+# Runbook Document Shape (type: runbook)
+# =============================================================================
+
+markov:RunbookShape
+    a sh:NodeShape ;
+    sh:targetClass markov:Runbook ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^urn:markov:runbook:[a-z0-9-]+$" ;
+    sh:property [
+        sh:path markov:type ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^runbook$" ;
+        sh:message "Runbook frontmatter MUST declare 'type: runbook'." ;
+    ] ;
+    sh:property [
+        sh:path markov:title ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minLength 5 ;
+        sh:message "Runbook MUST declare a non-empty title." ;
+    ] ;
+    sh:property [
+        sh:path markov:description ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minLength 15 ;
+        sh:message "Runbook MUST declare a descriptive one-sentence description." ;
+    ] ;
+    sh:property [
+        sh:path markov:timestamp ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" ;
+        sh:message "Runbook MUST declare an ISO-8601 UTC timestamp." ;
+    ] ;
+    sh:property [
+        sh:path markov:hasSection ;
+        sh:datatype xsd:string ;
+        sh:minCount 6 ;
+        sh:message "Runbook MUST contain all 6 required sections: When to Use This Runbook, Preconditions, Step-by-Step Procedure, Verification, Troubleshooting & Rollback, and Runbook Template." ;
+    ] .

@@ -44,11 +44,11 @@ func input(s string) string { return strings.TrimLeft(s, "\n") }
 
 func TestRun(t *testing.T) {
 	type testCase struct {
-		name     string
-		input    string
-		showAll  bool
-		wantCode int
-		wantOut  []string // substrings that MUST appear in output
+		name       string
+		input      string
+		showAll    bool
+		wantCode   int
+		wantOut    []string // substrings that MUST appear in output
 		wantAbsent []string // substrings that MUST NOT appear in output
 	}
 	cases := []testCase{
@@ -110,8 +110,8 @@ ok  	github.com/x/y	0.001s
 --- PASS: TestNormalizeRows (0.00s)
 ok  	github.com/x/y	0.001s
 `),
-			wantCode: 0,
-			wantOut:  []string{"NormalizeRows"},
+			wantCode:   0,
+			wantOut:    []string{"NormalizeRows"},
 			wantAbsent: []string{"TestNormalizeRows"},
 		},
 		{
@@ -123,8 +123,8 @@ ok  	github.com/x/y	0.001s
 --- PASS: TestFoo (0.00s)
 ok  	github.com/x/y	0.001s
 `),
-			wantCode: 0,
-			wantOut:  []string{"MUST preserve row sum invariant"},
+			wantCode:   0,
+			wantOut:    []string{"MUST preserve row sum invariant"},
 			wantAbsent: []string{"MUST_preserve_row_sum_invariant"},
 		},
 		{

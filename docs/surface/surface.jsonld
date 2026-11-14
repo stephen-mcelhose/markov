@@ -1,0 +1,2101 @@
+{
+  "@context": "./context.jsonld",
+  "@id": "urn:markov:surface",
+  "@type": "SurfaceGraph",
+  "module": "github.com/stephen-mcelhose/markov",
+  "schema": {
+    "def": "Mathematical definition",
+    "req": "Domain preconditions",
+    "err": "Boundary/error behavior",
+    "src": "Primary literature or reference",
+    "invariants": "Algebraic/probabilistic invariants (tol-bounded)"
+  },
+  "layer1": {
+    "@id": "urn:markov:pkg:markov",
+    "@type": "Package",
+    "package": "markov",
+    "importPath": "github.com/stephen-mcelhose/markov",
+    "dir": ".",
+    "files": [
+      "doc.go",
+      "errors.go",
+      "kernel.go",
+      "distribution.go",
+      "partition.go"
+    ],
+    "errorList": [
+      "ErrUnimplemented",
+      "ErrNotStochastic",
+      "ErrInvalidDistribution",
+      "ErrInvalidPartition",
+      "ErrSingularOperator"
+    ],
+    "doc": {
+      "@id": "urn:markov:file:markov/doc.go",
+      "@type": "File",
+      "path": "doc.go"
+    },
+    "errors": {
+      "@id": "urn:markov:file:markov/errors.go",
+      "@type": "File",
+      "path": "errors.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:markov.ErrUnimplemented",
+          "@type": "Error",
+          "name": "ErrUnimplemented",
+          "signature": "var ErrUnimplemented error"
+        },
+        {
+          "@id": "urn:markov:sym:markov.ErrNotStochastic",
+          "@type": "Error",
+          "name": "ErrNotStochastic",
+          "signature": "var ErrNotStochastic error"
+        },
+        {
+          "@id": "urn:markov:sym:markov.ErrInvalidDistribution",
+          "@type": "Error",
+          "name": "ErrInvalidDistribution",
+          "signature": "var ErrInvalidDistribution error"
+        },
+        {
+          "@id": "urn:markov:sym:markov.ErrInvalidPartition",
+          "@type": "Error",
+          "name": "ErrInvalidPartition",
+          "signature": "var ErrInvalidPartition error"
+        },
+        {
+          "@id": "urn:markov:sym:markov.ErrSingularOperator",
+          "@type": "Error",
+          "name": "ErrSingularOperator",
+          "signature": "var ErrSingularOperator error"
+        }
+      ]
+    },
+    "kernel": {
+      "@id": "urn:markov:file:markov/kernel.go",
+      "@type": "File",
+      "path": "kernel.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:markov.Kernel",
+          "@type": "Type",
+          "name": "Kernel",
+          "signature": "type Kernel struct { P *mat.Dense; StateNames []string }"
+        },
+        {
+          "@id": "urn:markov:sym:markov.NewKernel",
+          "@type": "Function",
+          "name": "NewKernel",
+          "signature": "func NewKernel(P *mat.Dense, names []string) (*Kernel, error)",
+          "def": "$P \\in \\mathbb{R}^{n \\times n},\\; P_{i,j} \\ge -\\varepsilon_0,\\; \\left|\\sum_{j=0}^{n-1} P_{i,j} - 1\\right| \\le \\varepsilon_0$",
+          "req": "$P \\neq \\text{nil}$, square $n \\times n$ ($n \\ge 1$), $\\text{names} = \\text{nil} \\lor |\\text{names}| = n$",
+          "err": "Returns `ErrNotStochastic` on negative entries or row sums outside $1 \\pm \\varepsilon_0$",
+          "delegatesTo": "urn:markov:sym:markov.NewKernelWithTol",
+          "references": [
+            "urn:markov:sym:markov.ErrNotStochastic",
+            "urn:markov:sym:markov.Kernel",
+            "urn:markov:sym:markov.NewKernelWithTol"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, Ch. I §1.1 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            },
+            {
+              "@type": "Source",
+              "citation": "stephen-mcelhose/catrace (`trace.go`)",
+              "url": "https://github.com/stephen-mcelhose/catrace"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:markov.NewKernel.Row_Stochasticity",
+              "@type": "Invariant",
+              "name": "Row Stochasticity",
+              "expr": "$\\forall i:\\; P_{i,j} \\ge -\\varepsilon_0 \\;\\land\\; \\left|\\sum_j P_{i,j} - 1\\right| \\le \\varepsilon_0$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.NewKernelWithTol",
+          "@type": "Function",
+          "name": "NewKernelWithTol",
+          "signature": "func NewKernelWithTol(P *mat.Dense, names []string, tol float64) (*Kernel, error)",
+          "def": "$P \\in \\mathbb{R}^{n \\times n},\\; P_{i,j} \\ge -\\varepsilon,\\; \\left|\\sum_{j=0}^{n-1} P_{i,j} - 1\\right| \\le \\varepsilon$",
+          "req": "$P \\neq \\text{nil}$, square $n \\times n$ ($n \\ge 1$), $\\varepsilon \\ge 0$",
+          "err": "Returns `ErrNotStochastic` if stochasticity fails beyond $\\varepsilon$",
+          "references": [
+            "urn:markov:sym:markov.ErrNotStochastic",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, Ch. I §1.1 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:markov.NewKernelWithTol.Tolerance_Monotonicity",
+              "@type": "Invariant",
+              "name": "Tolerance Monotonicity",
+              "expr": "$\\varepsilon_1 \\le \\varepsilon_2 \\implies \\text{valid}(P, \\varepsilon_1) \\implies \\text{valid}(P, \\varepsilon_2)$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.MustNewKernel",
+          "@type": "Function",
+          "name": "MustNewKernel",
+          "signature": "func MustNewKernel(P *mat.Dense, names []string) *Kernel",
+          "def": "$\\text{unwrap}(\\text{NewKernel}(P, \\text{names}))$",
+          "err": "Panics on invalid matrix or dimension mismatch",
+          "delegatesTo": "urn:markov:sym:markov.NewKernel",
+          "references": [
+            "urn:markov:sym:markov.Kernel",
+            "urn:markov:sym:markov.NewKernel"
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.Kernel.NumStates",
+          "@type": "Method",
+          "name": "Kernel.NumStates",
+          "receiverType": "urn:markov:sym:markov.Kernel",
+          "signature": "func (k *Kernel) NumStates() int",
+          "def": "$n = |S|$ (returns 0 if $k = \\text{nil}$ or $k.P = \\text{nil}$)",
+          "references": [
+            "urn:markov:sym:markov.Kernel"
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.Kernel.Clone",
+          "@type": "Method",
+          "name": "Kernel.Clone",
+          "receiverType": "urn:markov:sym:markov.Kernel",
+          "signature": "func (k *Kernel) Clone() *Kernel",
+          "def": "$k' = (P', S'),\\; P'_{i,j} = P_{i,j}$",
+          "references": [
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:markov.Kernel.Clone.Value_Equality_Memory_Isolation",
+              "@type": "Invariant",
+              "name": "Value Equality & Memory Isolation",
+              "expr": "$P' = P \\;\\land\\; \\&P' \\neq \\&P$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.Kernel.Submatrix",
+          "@type": "Method",
+          "name": "Kernel.Submatrix",
+          "receiverType": "urn:markov:sym:markov.Kernel",
+          "signature": "func (k *Kernel) Submatrix(rows, cols []int) *mat.Dense",
+          "def": "$P_{I, J} = [P_{i,j}]_{i \\in I,\\, j \\in J}$",
+          "req": "$|I| \\ge 1,\\; |J| \\ge 1,\\; I, J \\subseteq \\{0, \\dots, n-1\\}$",
+          "delegatesTo": "urn:markov:sym:markov.Submatrix",
+          "references": [
+            "urn:markov:sym:markov.Kernel",
+            "urn:markov:sym:markov.Submatrix"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Horn & Johnson (2013), *Matrix Analysis*, 2nd ed., §0.7.1 \"Submatrices\" (Internet Archive)",
+              "url": "https://archive.org/details/matrix-analysis-2nd-edition-horn-2013"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.Kernel.NormalizeRows",
+          "@type": "Method",
+          "name": "Kernel.NormalizeRows",
+          "receiverType": "urn:markov:sym:markov.Kernel",
+          "signature": "func (k *Kernel) NormalizeRows(tol float64) error",
+          "def": "$\\tilde{P}_{i,j} = \\frac{P_{i,j}}{\\sum_{r=0}^{n-1} P_{i,r}}$",
+          "req": "$k \\neq \\text{nil},\\; P_{i,j} \\ge -\\varepsilon,\\; \\sum_r P_{i,r} > \\varepsilon$",
+          "err": "Returns `ErrNotStochastic` on negative entries or zero-sum rows",
+          "references": [
+            "urn:markov:sym:markov.ErrNotStochastic",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, Ch. II §2.2 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:markov.Kernel.NormalizeRows.Idempotence",
+              "@type": "Invariant",
+              "name": "Idempotence",
+              "expr": "$\\text{NormalizeRows}(\\text{NormalizeRows}(P)) = \\text{NormalizeRows}(P)$",
+              "references": [
+                "urn:markov:sym:markov.NormalizeRows"
+              ]
+            },
+            {
+              "@id": "urn:markov:inv:markov.Kernel.NormalizeRows.Unit_Row_Sums",
+              "@type": "Invariant",
+              "name": "Unit Row Sums",
+              "expr": "$\\forall i:\\; \\sum_{j=0}^{n-1} \\tilde{P}_{i,j} = 1 \\pm \\varepsilon$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.Submatrix",
+          "@type": "Function",
+          "name": "Submatrix",
+          "signature": "func Submatrix(P *mat.Dense, rows, cols []int) *mat.Dense",
+          "def": "$P_{I, J} = [P_{i,j}]_{i \\in I,\\, j \\in J}$",
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Horn & Johnson (2013), *Matrix Analysis*, 2nd ed., §0.7.1 (Internet Archive)",
+              "url": "https://archive.org/details/matrix-analysis-2nd-edition-horn-2013"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:markov.Submatrix.Full_Index_Identity",
+              "@type": "Invariant",
+              "name": "Full-Index Identity",
+              "expr": "$I = J = [0, \\dots, n-1] \\implies P_{I, J} = P$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.NormalizeRows",
+          "@type": "Function",
+          "name": "NormalizeRows",
+          "signature": "func NormalizeRows(P *mat.Dense, tol float64) error",
+          "def": "$\\tilde{P}_{i,j} = \\frac{P_{i,j}}{\\sum_{r=0}^{n-1} P_{i,r}}$",
+          "err": "Returns `ErrNotStochastic` on nil matrix, negative entries, or zero-sum rows",
+          "delegatesTo": "urn:markov:sym:markov.Kernel.NormalizeRows",
+          "references": [
+            "urn:markov:sym:markov.ErrNotStochastic",
+            "urn:markov:sym:markov.Kernel.NormalizeRows"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, Ch. II §2.2 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.CanonicalSubset",
+          "@type": "Function",
+          "name": "CanonicalSubset",
+          "signature": "func CanonicalSubset(subset []int) []int",
+          "def": "$A^* = \\text{sort}(\\text{unique}(A))$",
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "stephen-mcelhose/catrace (`trace.go` — `CanonicalSubset`)",
+              "url": "https://github.com/stephen-mcelhose/catrace"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:markov.CanonicalSubset.Idempotence_Order_Invariance",
+              "@type": "Invariant",
+              "name": "Idempotence & Order Invariance",
+              "expr": "$\\text{CanonicalSubset}(\\text{CanonicalSubset}(A)) = \\text{CanonicalSubset}(A)$",
+              "references": [
+                "urn:markov:sym:markov.CanonicalSubset"
+              ]
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.NearlyEqual",
+          "@type": "Function",
+          "name": "NearlyEqual",
+          "signature": "func NearlyEqual(a, b, tol float64) bool",
+          "def": "$|a - b| \\le \\varepsilon$",
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Goldberg (1991), \"What Every Computer Scientist Should Know About Floating-Point Arithmetic\" (ENS Lyon PDF)",
+              "url": "https://ens-lyon.fr"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:markov.NearlyEqual.Reflexive_Symmetric",
+              "@type": "Invariant",
+              "name": "Reflexive & Symmetric",
+              "expr": "$\\text{NearlyEqual}(a, a, \\varepsilon) \\;\\land\\; (\\text{NearlyEqual}(a, b, \\varepsilon) \\iff \\text{NearlyEqual}(b, a, \\varepsilon))$",
+              "references": [
+                "urn:markov:sym:markov.NearlyEqual"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "distribution": {
+      "@id": "urn:markov:file:markov/distribution.go",
+      "@type": "File",
+      "path": "distribution.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:markov.Distribution",
+          "@type": "Type",
+          "name": "Distribution",
+          "signature": "type Distribution []float64"
+        },
+        {
+          "@id": "urn:markov:sym:markov.NewDistribution",
+          "@type": "Function",
+          "name": "NewDistribution",
+          "signature": "func NewDistribution(probs []float64, tol float64) (Distribution, error)",
+          "def": "$\\pi \\in \\Delta^{n-1}:\\; \\pi_i \\ge -\\varepsilon,\\; \\left|\\sum_{i=0}^{n-1} \\pi_i - 1\\right| \\le \\varepsilon$",
+          "req": "$|\\text{probs}| \\ge 1,\\; \\varepsilon \\ge 0$",
+          "err": "Returns `ErrInvalidDistribution` if empty, negative beyond $-\\varepsilon$, or sum $\\notin [1-\\varepsilon, 1+\\varepsilon]$",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.ErrInvalidDistribution"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, Ch. II §2.1 \"Probability Vectors\" (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:markov.NewDistribution.Simplex_Membership",
+              "@type": "Invariant",
+              "name": "Simplex Membership",
+              "expr": "$\\pi_i \\ge -\\varepsilon \\;\\land\\; \\sum_i \\pi_i = 1 \\pm \\varepsilon$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.MustNewDistribution",
+          "@type": "Function",
+          "name": "MustNewDistribution",
+          "signature": "func MustNewDistribution(probs []float64, tol float64) Distribution",
+          "def": "$\\text{unwrap}(\\text{NewDistribution}(\\text{probs}, \\varepsilon))$",
+          "err": "Panics on invalid probability vector",
+          "delegatesTo": "urn:markov:sym:markov.NewDistribution",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.NewDistribution"
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.Distribution.Validate",
+          "@type": "Method",
+          "name": "Distribution.Validate",
+          "receiverType": "urn:markov:sym:markov.Distribution",
+          "signature": "func (d Distribution) Validate(tol float64) error",
+          "def": "$\\pi_i \\ge -\\varepsilon,\\; \\left|\\sum_{i=0}^{n-1} \\pi_i - 1\\right| \\le \\varepsilon$",
+          "err": "Returns `ErrInvalidDistribution` if empty, negative, or sum deviates from 1 by more than $\\varepsilon$",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.ErrInvalidDistribution"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, Ch. II §2.1 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.Distribution.Restrict",
+          "@type": "Method",
+          "name": "Distribution.Restrict",
+          "receiverType": "urn:markov:sym:markov.Distribution",
+          "signature": "func (d Distribution) Restrict(subset []int, tol float64) (Distribution, error)",
+          "def": "$\\pi_A[i] = \\frac{\\pi_{A_i}}{\\sum_{s \\in A} \\pi_s}$",
+          "req": "$A \\neq \\emptyset,\\; A \\subseteq \\{0, \\dots, n-1\\},\\; \\sum_{s \\in A} \\pi_s > \\varepsilon$",
+          "err": "Returns `ErrInvalidDistribution` if subset is empty, out of bounds, or has zero total mass",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.ErrInvalidDistribution"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Grinstead & Snell (2006), *Introduction to Probability*, Ch. 4 \"Conditional Probability\" (Dartmouth PDF)",
+              "url": "https://dartmouth.edu"
+            },
+            {
+              "@type": "Source",
+              "citation": "stephen-mcelhose/catrace (`trace.go`)",
+              "url": "https://github.com/stephen-mcelhose/catrace"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:markov.Distribution.Restrict.Full_Space_Identity",
+              "@type": "Invariant",
+              "name": "Full-Space Identity",
+              "expr": "$A = [0, \\dots, n-1] \\implies \\pi_A = \\pi$"
+            },
+            {
+              "@id": "urn:markov:inv:markov.Distribution.Restrict.Tower_Law_Nested_Conditioning",
+              "@type": "Invariant",
+              "name": "Tower Law (Nested Conditioning)",
+              "expr": "$B \\subseteq A \\implies \\text{Restrict}(\\text{Restrict}(\\pi, A), B) = \\text{Restrict}(\\pi, B)$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.Distribution.Project",
+          "@type": "Method",
+          "name": "Distribution.Project",
+          "receiverType": "urn:markov:sym:markov.Distribution",
+          "signature": "func (d Distribution) Project(p Partition, tol float64) (Distribution, error)",
+          "def": "$\\hat{\\pi}[j] = \\sum_{s \\in B_j} \\pi_s = (\\pi V)_j$",
+          "req": "$p.\\text{Validate}(|\\pi|) = \\text{nil}$",
+          "err": "Returns `ErrInvalidPartition` or `ErrInvalidDistribution` on invalid inputs",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.ErrInvalidDistribution",
+            "urn:markov:sym:markov.ErrInvalidPartition",
+            "urn:markov:sym:markov.Partition"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, §6.3 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:markov.Distribution.Project.Mass_Conservation",
+              "@type": "Invariant",
+              "name": "Mass Conservation",
+              "expr": "$\\sum_{j=0}^{m-1} \\hat{\\pi}_j = \\sum_{i=0}^{n-1} \\pi_i = 1 \\pm \\varepsilon$"
+            },
+            {
+              "@id": "urn:markov:inv:markov.Distribution.Project.Trivial_Partition_Bounds",
+              "@type": "Invariant",
+              "name": "Trivial Partition Bounds",
+              "expr": "$\\mathcal{B}_{\\text{discrete}} \\implies \\hat{\\pi} = \\pi;\\;\\; \\mathcal{B}_{\\text{single}} \\implies \\hat{\\pi} = [1.0]$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.ValidateDistribution",
+          "@type": "Function",
+          "name": "ValidateDistribution",
+          "signature": "func ValidateDistribution(pi Distribution, tol float64) error",
+          "def": "$\\pi.\\text{Validate}(\\varepsilon)$",
+          "delegatesTo": "urn:markov:sym:markov.Distribution.Validate",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.Distribution.Validate"
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.RestrictDistribution",
+          "@type": "Function",
+          "name": "RestrictDistribution",
+          "signature": "func RestrictDistribution(pi Distribution, subset []int, tol float64) (Distribution, error)",
+          "def": "$\\pi.\\text{Restrict}(A, \\varepsilon)$",
+          "delegatesTo": "urn:markov:sym:markov.Distribution.Restrict",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.Distribution.Restrict"
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.ProjectDistribution",
+          "@type": "Function",
+          "name": "ProjectDistribution",
+          "signature": "func ProjectDistribution(pi Distribution, p Partition, tol float64) (Distribution, error)",
+          "def": "$\\pi.\\text{Project}(p, \\varepsilon)$",
+          "delegatesTo": "urn:markov:sym:markov.Distribution.Project",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.Distribution.Project",
+            "urn:markov:sym:markov.Partition"
+          ]
+        }
+      ]
+    },
+    "partition": {
+      "@id": "urn:markov:file:markov/partition.go",
+      "@type": "File",
+      "path": "partition.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:markov.Partition",
+          "@type": "Type",
+          "name": "Partition",
+          "signature": "type Partition [][]int"
+        },
+        {
+          "@id": "urn:markov:sym:markov.Partition.Validate",
+          "@type": "Method",
+          "name": "Partition.Validate",
+          "receiverType": "urn:markov:sym:markov.Partition",
+          "signature": "func (p Partition) Validate(n int) error",
+          "def": "$B_i \\neq \\emptyset,\\; B_i \\cap B_j = \\emptyset \\; (i \\neq j),\\; \\bigcup_{i=0}^{m-1} B_i = \\{0,\\dots,n-1\\}$",
+          "req": "$n \\ge 1,\\; |p| \\ge 1$",
+          "err": "Returns `ErrInvalidPartition` on empty blocks, out-of-range indices, duplicates, or incomplete coverage",
+          "references": [
+            "urn:markov:sym:markov.ErrInvalidPartition",
+            "urn:markov:sym:markov.Partition"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Halmos (1960), *Naive Set Theory*, §7 \"Relations / Partitions\" (Internet Archive)",
+              "url": "https://archive.org"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.Partition.IndicatorMatrix",
+          "@type": "Method",
+          "name": "Partition.IndicatorMatrix",
+          "receiverType": "urn:markov:sym:markov.Partition",
+          "signature": "func (p Partition) IndicatorMatrix(n int) (*mat.Dense, error)",
+          "def": "$V \\in \\{0,1\\}^{n \\times m},\\; V_{s,j} = \\mathbf{1}_{B_j}(s)$",
+          "req": "$p.\\text{Validate}(n) = \\text{nil}$",
+          "err": "Returns `ErrInvalidPartition` if partition is invalid for $n$",
+          "references": [
+            "urn:markov:sym:markov.ErrInvalidPartition",
+            "urn:markov:sym:markov.Partition"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, §6.3, p. 124 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:markov.Partition.IndicatorMatrix.Row_Unit_Sum",
+              "@type": "Invariant",
+              "name": "Row Unit Sum",
+              "expr": "$\\forall s \\in \\{0,\\dots,n-1\\}:\\; \\sum_{j=0}^{m-1} V_{s,j} = 1$"
+            },
+            {
+              "@id": "urn:markov:inv:markov.Partition.IndicatorMatrix.Column_Cardinality",
+              "@type": "Invariant",
+              "name": "Column Cardinality",
+              "expr": "$\\forall j \\in \\{0,\\dots,m-1\\}:\\; \\sum_{s=0}^{n-1} V_{s,j} = |B_j|$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.Partition.DistributorMatrix",
+          "@type": "Method",
+          "name": "Partition.DistributorMatrix",
+          "receiverType": "urn:markov:sym:markov.Partition",
+          "signature": "func (p Partition) DistributorMatrix(n int, weights Distribution, tol float64) (*mat.Dense, error)",
+          "def": "$U \\in \\mathbb{R}^{m \\times n},\\; U_{i,s} = \\frac{w_s \\mathbf{1}_{B_i}(s)}{\\sum_{r \\in B_i} w_r}$",
+          "req": "$p.\\text{Validate}(n) = \\text{nil},\\; \\text{weights} = \\text{nil} \\lor (|\\text{weights}| = n \\land \\forall i: \\sum_{r \\in B_i} w_r > \\varepsilon)$",
+          "err": "Returns `ErrInvalidPartition` or `ErrInvalidDistribution` if any block has zero weight",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.ErrInvalidDistribution",
+            "urn:markov:sym:markov.ErrInvalidPartition",
+            "urn:markov:sym:markov.Partition"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, §6.3, p. 124 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:markov.Partition.DistributorMatrix.Left_Inverse_Identity",
+              "@type": "Invariant",
+              "name": "Left-Inverse Identity",
+              "expr": "$U \\cdot V = I_m$"
+            },
+            {
+              "@id": "urn:markov:inv:markov.Partition.DistributorMatrix.Row_Stochasticity",
+              "@type": "Invariant",
+              "name": "Row Stochasticity",
+              "expr": "$\\forall i \\in \\{0,\\dots,m-1\\}:\\; \\sum_{s=0}^{n-1} U_{i,s} = 1 \\pm \\varepsilon$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.ValidatePartition",
+          "@type": "Function",
+          "name": "ValidatePartition",
+          "signature": "func ValidatePartition(p Partition, n int) error",
+          "def": "$p.\\text{Validate}(n)$",
+          "delegatesTo": "urn:markov:sym:markov.Partition.Validate",
+          "references": [
+            "urn:markov:sym:markov.Partition",
+            "urn:markov:sym:markov.Partition.Validate"
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.IndicatorMatrix",
+          "@type": "Function",
+          "name": "IndicatorMatrix",
+          "signature": "func IndicatorMatrix(p Partition, n int) (*mat.Dense, error)",
+          "def": "$p.\\text{IndicatorMatrix}(n)$",
+          "delegatesTo": "urn:markov:sym:markov.Partition.IndicatorMatrix",
+          "references": [
+            "urn:markov:sym:markov.Partition",
+            "urn:markov:sym:markov.Partition.IndicatorMatrix"
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:markov.DistributorMatrix",
+          "@type": "Function",
+          "name": "DistributorMatrix",
+          "signature": "func DistributorMatrix(p Partition, n int, weights Distribution, tol float64) (*mat.Dense, error)",
+          "def": "$p.\\text{DistributorMatrix}(n, w, \\varepsilon)$",
+          "delegatesTo": "urn:markov:sym:markov.Partition.DistributorMatrix",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.Partition",
+            "urn:markov:sym:markov.Partition.DistributorMatrix"
+          ]
+        }
+      ]
+    }
+  },
+  "reduce": {
+    "@id": "urn:markov:pkg:reduce",
+    "@type": "Package",
+    "package": "reduce",
+    "importPath": "github.com/stephen-mcelhose/markov/reduce",
+    "dir": "reduce",
+    "files": [
+      "doc.go",
+      "trace.go",
+      "lump.go",
+      "bisim.go"
+    ],
+    "dependsOn": [
+      "urn:markov:pkg:markov"
+    ],
+    "doc": {
+      "@id": "urn:markov:file:reduce/doc.go",
+      "@type": "File",
+      "path": "doc.go"
+    },
+    "trace": {
+      "@id": "urn:markov:file:reduce/trace.go",
+      "@type": "File",
+      "path": "trace.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:reduce.Trace",
+          "@type": "Function",
+          "name": "Trace",
+          "signature": "func Trace(k *markov.Kernel, subset []int, tol float64) (*markov.Kernel, error)",
+          "def": "$P_A = a + b(I - c)^{-1}d$",
+          "req": "$k \\neq \\text{nil}$, non-empty $A \\subseteq \\{0,\\dots,n-1\\}$, $(I - c)$ invertible (no closed recurrent trap inside $A^c$)",
+          "err": "Returns `ErrSingularOperator` if $(I - c)$ is singular (excursions never return to $A$)",
+          "references": [
+            "urn:markov:sym:markov.ErrSingularOperator",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, §6.1 \"Watched Markov Chains\" (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            },
+            {
+              "@type": "Source",
+              "citation": "Hoffman & Prakash (2014), \"Objects of Consciousness\", *Frontiers in Psychology* 5:577",
+              "url": "https://frontiersin.org"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:reduce.Trace.Identity",
+              "@type": "Invariant",
+              "name": "Identity",
+              "expr": "$\\text{Trace}(P, S) = P$",
+              "references": [
+                "urn:markov:sym:reduce.Trace"
+              ]
+            },
+            {
+              "@id": "urn:markov:inv:reduce.Trace.Tower_Law",
+              "@type": "Invariant",
+              "name": "Tower Law",
+              "expr": "$B \\subseteq A \\implies \\text{Trace}(\\text{Trace}(P, A), B) = \\text{Trace}(P, B)$",
+              "references": [
+                "urn:markov:sym:reduce.Trace"
+              ]
+            },
+            {
+              "@id": "urn:markov:inv:reduce.Trace.Stationary_Restriction",
+              "@type": "Invariant",
+              "name": "Stationary Restriction",
+              "expr": "$\\pi P = \\pi \\land \\sum_{s \\in A} \\pi_s > 0 \\implies \\text{Restrict}(\\pi, A) \\cdot P_A = \\text{Restrict}(\\pi, A)$"
+            },
+            {
+              "@id": "urn:markov:inv:reduce.Trace.Commutes_w_Lump",
+              "@type": "Invariant",
+              "name": "Commutes w/ Lump",
+              "expr": "$R(P, \\mathcal{B}) = 0 \\land A = \\bigcup_{i \\in \\mathcal{I}} B_i \\implies \\text{Trace}(\\text{Lump}(P, \\mathcal{B}), \\mathcal{I}) = \\text{Lump}(\\text{Trace}(P, A), \\mathcal{B}|_A)$",
+              "references": [
+                "urn:markov:sym:reduce.Lump",
+                "urn:markov:sym:reduce.Trace"
+              ]
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:reduce.MustTrace",
+          "@type": "Function",
+          "name": "MustTrace",
+          "signature": "func MustTrace(k *markov.Kernel, subset []int, tol float64) *markov.Kernel",
+          "def": "$\\text{unwrap}(\\text{Trace}(k, A, \\varepsilon))$",
+          "err": "Panics on nil kernel, invalid subset, or singular excursion matrix",
+          "delegatesTo": "urn:markov:sym:reduce.Trace",
+          "references": [
+            "urn:markov:sym:markov.Kernel",
+            "urn:markov:sym:reduce.Trace"
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:reduce.IsTraceOf",
+          "@type": "Function",
+          "name": "IsTraceOf",
+          "signature": "func IsTraceOf(k, parent *markov.Kernel, subset []int, tol float64) (bool, error)",
+          "def": "$\\|P_k - \\text{Trace}(P_{\\text{parent}}, A)\\|_\\infty \\le \\varepsilon$",
+          "req": "$k \\neq \\text{nil},\\; \\text{parent} \\neq \\text{nil},\\; A \\subseteq \\{0,\\dots,n_{\\text{parent}}-1\\}$",
+          "err": "Returns `ErrSingularOperator` if `Trace(parent, subset, tol)` fails",
+          "references": [
+            "urn:markov:sym:markov.ErrSingularOperator",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, §6.1 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            },
+            {
+              "@type": "Source",
+              "citation": "stephen-mcelhose/catrace (`trace.go` — `IsTraceOf`)",
+              "url": "https://github.com/stephen-mcelhose/catrace"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:reduce.IsTraceOf.Soundness",
+              "@type": "Invariant",
+              "name": "Soundness",
+              "expr": "$\\text{IsTraceOf}(\\text{Trace}(P, A), P, A, \\varepsilon) = \\text{true}$",
+              "references": [
+                "urn:markov:sym:reduce.IsTraceOf",
+                "urn:markov:sym:reduce.Trace"
+              ]
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:reduce.TraceReward",
+          "@type": "Function",
+          "name": "TraceReward",
+          "signature": "func TraceReward(k *markov.Kernel, rewards []float64, subset []int, tol float64) ([]float64, error)",
+          "def": "$r_A = r_a + b(I - c)^{-1}r_c$",
+          "req": "$|\\text{rewards}| = n$, $(I - c)$ invertible",
+          "err": "Returns `ErrSingularOperator` if $(I - c)$ is singular",
+          "references": [
+            "urn:markov:sym:markov.ErrSingularOperator",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, §3.3 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            },
+            {
+              "@type": "Source",
+              "citation": "Stanford University — Markov Decision Processes (Ch. 3)",
+              "url": "https://stanford.edu/~ashlearn/RLForFinanceBook/chapter3.pdf"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:reduce.TraceReward.Absorption_Reward_Preservation",
+              "@type": "Invariant",
+              "name": "Absorption Reward Preservation",
+              "expr": "$\\mathbb{E}_s\\left[\\sum_{t < \\tau_{\\text{abs}}} r_{X_t}\\right] \\text{ in } (P_A, r_A) = \\text{in } (P, r) \\;\\forall s \\in A$"
+            }
+          ]
+        }
+      ]
+    },
+    "lump": {
+      "@id": "urn:markov:file:reduce/lump.go",
+      "@type": "File",
+      "path": "lump.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:reduce.Lump",
+          "@type": "Function",
+          "name": "Lump",
+          "signature": "func Lump(k *markov.Kernel, p markov.Partition, names []string, weights markov.Distribution, tol float64) (*markov.Kernel, error)",
+          "def": "$\\hat{P} = U P V$",
+          "req": "$k \\neq \\text{nil},\\; p.\\text{Validate}(n) = \\text{nil},\\; \\text{names} = \\text{nil} \\lor |\\text{names}| = |p|$",
+          "err": "Returns `ErrInvalidPartition` or `ErrInvalidDistribution` on invalid partition/weights",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.ErrInvalidDistribution",
+            "urn:markov:sym:markov.ErrInvalidPartition",
+            "urn:markov:sym:markov.Kernel",
+            "urn:markov:sym:markov.Partition"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, §6.3 \"Lumpable Markov Chains\", pp. 123–140 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:reduce.Lump.Trivial_Bounds",
+              "@type": "Invariant",
+              "name": "Trivial Bounds",
+              "expr": "$\\mathcal{B}_{\\text{discrete}} \\implies \\hat{P} = P;\\;\\; \\mathcal{B}_{\\text{single}} \\implies \\hat{P} = [[1.0]]$"
+            },
+            {
+              "@id": "urn:markov:inv:reduce.Lump.Weight_Invariance",
+              "@type": "Invariant",
+              "name": "Weight Invariance",
+              "expr": "$R(P, \\mathcal{B}) = 0 \\implies \\forall w, w':\\; \\text{Lump}(P, \\mathcal{B}, w) = \\text{Lump}(P, \\mathcal{B}, w')$",
+              "references": [
+                "urn:markov:sym:reduce.Lump"
+              ]
+            },
+            {
+              "@id": "urn:markov:inv:reduce.Lump.Multi_Step_Commutation",
+              "@type": "Invariant",
+              "name": "Multi-Step Commutation",
+              "expr": "$P V = V \\hat{P} \\implies P^t V = V \\hat{P}^t \\;\\forall t \\ge 1$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:reduce.MustLump",
+          "@type": "Function",
+          "name": "MustLump",
+          "signature": "func MustLump(k *markov.Kernel, p markov.Partition, names []string, weights markov.Distribution, tol float64) *markov.Kernel",
+          "def": "$\\text{unwrap}(\\text{Lump}(k, \\mathcal{B}, \\text{names}, w, \\varepsilon))$",
+          "err": "Panics on nil kernel, invalid partition, or invalid weights",
+          "delegatesTo": "urn:markov:sym:reduce.Lump",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.Kernel",
+            "urn:markov:sym:markov.Partition",
+            "urn:markov:sym:reduce.Lump"
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:reduce.IsStronglyLumpable",
+          "@type": "Function",
+          "name": "IsStronglyLumpable",
+          "signature": "func IsStronglyLumpable(k *markov.Kernel, p markov.Partition, tol float64) (bool, error)",
+          "def": "$R(P, \\mathcal{B}) = \\max_{B_i} \\max_{s, s' \\in B_i} \\max_{B_j} |(PV)_{s,j} - (PV)_{s',j}| \\le \\varepsilon \\quad (\\text{exact } PV = V\\hat{P} \\text{ at } \\varepsilon = 0)$",
+          "req": "$k \\neq \\text{nil},\\; p.\\text{Validate}(n) = \\text{nil},\\; \\varepsilon \\ge 0$",
+          "err": "Returns `ErrInvalidPartition` if partition is invalid",
+          "references": [
+            "urn:markov:sym:markov.ErrInvalidPartition",
+            "urn:markov:sym:markov.Kernel",
+            "urn:markov:sym:markov.Partition"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, Theorem 6.3.2 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:reduce.IsStronglyLumpable.Residual_Equivalence",
+              "@type": "Invariant",
+              "name": "Residual Equivalence",
+              "expr": "$\\text{IsStronglyLumpable}(P, \\mathcal{B}, \\varepsilon) \\iff \\text{LumpabilityResidual}(P, \\mathcal{B}) \\le \\varepsilon$",
+              "references": [
+                "urn:markov:sym:reduce.IsStronglyLumpable",
+                "urn:markov:sym:reduce.LumpabilityResidual"
+              ]
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:reduce.LumpabilityResidual",
+          "@type": "Function",
+          "name": "LumpabilityResidual",
+          "signature": "func LumpabilityResidual(k *markov.Kernel, p markov.Partition) (float64, error)",
+          "def": "$R(P, \\mathcal{B}) = \\max_{B_i} \\max_{s, s' \\in B_i} \\max_{B_j} |(PV)_{s,j} - (PV)_{s',j}|$",
+          "req": "$k \\neq \\text{nil},\\; p.\\text{Validate}(n) = \\text{nil}$",
+          "err": "Returns `ErrInvalidPartition` if partition is invalid",
+          "references": [
+            "urn:markov:sym:markov.ErrInvalidPartition",
+            "urn:markov:sym:markov.Kernel",
+            "urn:markov:sym:markov.Partition"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Buchholz (1994), \"Exact and Ordinary Lumpability in Finite Markov Chains\", *J. Appl. Probab.* 31(1):59–75",
+              "url": "https://cambridge.org"
+            }
+          ]
+        }
+      ]
+    },
+    "bisim": {
+      "@id": "urn:markov:file:reduce/bisim.go",
+      "@type": "File",
+      "path": "bisim.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:reduce.CoarsestPartition",
+          "@type": "Function",
+          "name": "CoarsestPartition",
+          "signature": "func CoarsestPartition(k *markov.Kernel, initial markov.Partition, tol float64) (markov.Partition, error)",
+          "def": "$\\mathcal{B}^* = \\sup \\{ \\mathcal{B} \\preceq \\mathcal{B}_0 : R(P, \\mathcal{B}) \\le \\varepsilon \\}$",
+          "req": "$k \\neq \\text{nil},\\; \\text{initial} = \\text{nil} \\lor \\text{initial}.\\text{Validate}(n) = \\text{nil},\\; \\varepsilon \\ge 0$",
+          "err": "Returns `ErrInvalidPartition` if non-nil `initial` partition is invalid",
+          "references": [
+            "urn:markov:sym:markov.ErrInvalidPartition",
+            "urn:markov:sym:markov.Kernel",
+            "urn:markov:sym:markov.Partition"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Larsen & Skou (1991), \"Bisimulation through Probabilistic Testing\" (AAU Author PDF)",
+              "url": "https://aau.dk"
+            },
+            {
+              "@type": "Source",
+              "citation": "Paige & Tarjan (1987), *SIAM J. Comput.* 16(6):973–989",
+              "url": "https://siam.org"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:reduce.CoarsestPartition.Lumpability_Guarantee",
+              "@type": "Invariant",
+              "name": "Lumpability Guarantee",
+              "expr": "$\\text{IsStronglyLumpable}(P, \\mathcal{B}^*, \\varepsilon) = \\text{true}$",
+              "references": [
+                "urn:markov:sym:reduce.IsStronglyLumpable"
+              ]
+            },
+            {
+              "@id": "urn:markov:inv:reduce.CoarsestPartition.Idempotence",
+              "@type": "Invariant",
+              "name": "Idempotence",
+              "expr": "$\\text{CoarsestPartition}(P, \\mathcal{B}^*, \\varepsilon) = \\mathcal{B}^*$",
+              "references": [
+                "urn:markov:sym:reduce.CoarsestPartition"
+              ]
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:reduce.AreBisimilar",
+          "@type": "Function",
+          "name": "AreBisimilar",
+          "signature": "func AreBisimilar(k1, k2 *markov.Kernel, tol float64) (bool, error)",
+          "def": "$\\exists \\sigma:\\; \\hat{P}_1[i,j] = \\hat{P}_2[\\sigma(i), \\sigma(j)]$",
+          "req": "$k_1 \\neq \\text{nil},\\; k_2 \\neq \\text{nil},\\; \\varepsilon \\ge 0$",
+          "err": "Returns `ErrNotStochastic` if $k_1$ or $k_2$ is nil",
+          "references": [
+            "urn:markov:sym:markov.ErrNotStochastic",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Larsen & Skou (1991), \"Bisimulation through Probabilistic Testing\" (AAU Author PDF)",
+              "url": "https://aau.dk"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:reduce.AreBisimilar.Equivalence_Relation",
+              "@type": "Invariant",
+              "name": "Equivalence Relation",
+              "expr": "Reflexive ($k \\sim k$), Symmetric ($k_1 \\sim k_2 \\iff k_2 \\sim k_1$), Transitive"
+            },
+            {
+              "@id": "urn:markov:inv:reduce.AreBisimilar.Quotient_Self_Equivalence",
+              "@type": "Invariant",
+              "name": "Quotient Self-Equivalence",
+              "expr": "$R(P, \\mathcal{B}) \\le \\varepsilon \\implies \\text{AreBisimilar}(P, \\text{Lump}(P, \\mathcal{B}), \\varepsilon) = \\text{true}$",
+              "references": [
+                "urn:markov:sym:reduce.AreBisimilar",
+                "urn:markov:sym:reduce.Lump"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "solve": {
+    "@id": "urn:markov:pkg:solve",
+    "@type": "Package",
+    "package": "solve",
+    "importPath": "github.com/stephen-mcelhose/markov/solve",
+    "dir": "solve",
+    "files": [
+      "doc.go",
+      "stationary.go",
+      "fundamental.go",
+      "mfpt.go",
+      "classes.go",
+      "entropy.go"
+    ],
+    "dependsOn": [
+      "urn:markov:pkg:markov"
+    ],
+    "doc": {
+      "@id": "urn:markov:file:solve/doc.go",
+      "@type": "File",
+      "path": "doc.go"
+    },
+    "stationary": {
+      "@id": "urn:markov:file:solve/stationary.go",
+      "@type": "File",
+      "path": "stationary.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:solve.Stationary",
+          "@type": "Function",
+          "name": "Stationary",
+          "signature": "func Stationary(k *markov.Kernel, tol float64) (markov.Distribution, error)",
+          "def": "$\\pi P = \\pi,\\quad \\sum_{i=0}^{n-1} \\pi_i = 1,\\quad \\pi_i \\ge 0$",
+          "req": "Unichain ($|\\text{Recurrent}(P)| = 1$; unique stationary distribution)",
+          "err": "Returns `ErrSingularOperator` if chain has multiple closed recurrent classes ($|\\text{Recurrent}(P)| > 1$)",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.ErrSingularOperator",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Grassmann, Taksar & Heyman (1985), \"Regenerative Analysis and Steady State Distributions for Markov Chains\" (JSTOR)",
+              "url": "https://jstor.org"
+            },
+            {
+              "@type": "Source",
+              "citation": "Stewart (1994), Ch. 2 \"GTH Algorithm\" (UMD Lecture Notes)",
+              "url": "https://umd.edu"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:solve.Stationary.Left_Eigenvector_Fixed_Point",
+              "@type": "Invariant",
+              "name": "Left-Eigenvector Fixed Point",
+              "expr": "$\\|\\pi P - \\pi\\|_1 \\le \\varepsilon$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.Stationary.Multi_Step_Invariance",
+              "@type": "Invariant",
+              "name": "Multi-Step Invariance",
+              "expr": "$\\forall t \\ge 1:\\; \\|\\pi P^t - \\pi\\|_1 \\le t\\varepsilon$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.Stationary.Doubly_Stochastic_Uniformity",
+              "@type": "Invariant",
+              "name": "Doubly Stochastic Uniformity",
+              "expr": "$(\\forall j:\\; \\sum_i P_{i,j} = 1) \\implies \\pi_i = \\frac{1}{n}$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.Stationary.Trace_Restriction_Compatibility",
+              "@type": "Invariant",
+              "name": "Trace Restriction Compatibility",
+              "expr": "$\\pi_A = \\text{Restrict}(\\pi, A) \\implies \\|\\pi_A P_A - \\pi_A\\|_1 \\le \\varepsilon$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:solve.MustStationary",
+          "@type": "Function",
+          "name": "MustStationary",
+          "signature": "func MustStationary(k *markov.Kernel, tol float64) markov.Distribution",
+          "def": "$\\text{unwrap}(\\text{Stationary}(k, \\varepsilon))$",
+          "err": "Panics on nil kernel or reducible multi-class chain",
+          "delegatesTo": "urn:markov:sym:solve.Stationary",
+          "references": [
+            "urn:markov:sym:markov.Distribution",
+            "urn:markov:sym:markov.Kernel",
+            "urn:markov:sym:solve.Stationary"
+          ]
+        }
+      ]
+    },
+    "fundamental": {
+      "@id": "urn:markov:file:solve/fundamental.go",
+      "@type": "File",
+      "path": "fundamental.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:solve.FundamentalMatrix",
+          "@type": "Function",
+          "name": "FundamentalMatrix",
+          "signature": "func FundamentalMatrix(k *markov.Kernel, tol float64) (*mat.Dense, error)",
+          "def": "$Z = (I - P + \\mathbf{1}\\pi)^{-1}$",
+          "req": "Unichain ($|\\text{Recurrent}(P)| = 1$)",
+          "err": "Returns `ErrSingularOperator` when $|\\text{Recurrent}(P)| > 1$",
+          "references": [
+            "urn:markov:sym:markov.ErrSingularOperator",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, Ch. IV §4.3 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:solve.FundamentalMatrix.Two_Sided_Inverse_Identity",
+              "@type": "Invariant",
+              "name": "Two-Sided Inverse Identity",
+              "expr": "$\\|(I - P + \\mathbf{1}\\pi) Z - I\\|_\\infty \\le \\varepsilon \\;\\land\\; \\|Z(I - P + \\mathbf{1}\\pi) - I\\|_\\infty \\le \\varepsilon$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.FundamentalMatrix.Unit_Row_Sums",
+              "@type": "Invariant",
+              "name": "Unit Row Sums",
+              "expr": "$Z \\mathbf{1} = \\mathbf{1}$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.FundamentalMatrix.Stationary_Left_Annihilation",
+              "@type": "Invariant",
+              "name": "Stationary Left-Annihilation",
+              "expr": "$\\pi Z = \\pi$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:solve.AbsorbingFundamental",
+          "@type": "Function",
+          "name": "AbsorbingFundamental",
+          "signature": "func AbsorbingFundamental(k *markov.Kernel, transient []int, tol float64) (*mat.Dense, error)",
+          "def": "$N = (I - Q)^{-1} = \\sum_{t=0}^\\infty Q^t,\\quad Q = P_{T, T}$",
+          "req": "Non-empty transient subset $T \\subset \\{0,\\dots,n-1\\}$, spectral radius $\\rho(Q) < 1$",
+          "err": "Returns `ErrSingularOperator` if $(I - Q)$ is singular ($T$ contains a closed recurrent class)",
+          "references": [
+            "urn:markov:sym:markov.ErrSingularOperator",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, Ch. III §3.2 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:solve.AbsorbingFundamental.Two_Sided_Inverse_Identity",
+              "@type": "Invariant",
+              "name": "Two-Sided Inverse Identity",
+              "expr": "$\\|(I - Q) N - I\\|_\\infty \\le \\varepsilon \\;\\land\\; \\|N(I - Q) - I\\|_\\infty \\le \\varepsilon$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.AbsorbingFundamental.Entrywise_Non_Negativity",
+              "@type": "Invariant",
+              "name": "Entrywise Non-Negativity",
+              "expr": "$N_{i,j} \\ge -\\varepsilon$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.AbsorbingFundamental.Schur_Excursion_Equivalence",
+              "@type": "Invariant",
+              "name": "Schur Excursion Equivalence",
+              "expr": "$b N d = P_A - a \\quad (\\text{when } T = A^c)$"
+            }
+          ]
+        }
+      ]
+    },
+    "mfpt": {
+      "@id": "urn:markov:file:solve/mfpt.go",
+      "@type": "File",
+      "path": "mfpt.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:solve.MFPT",
+          "@type": "Function",
+          "name": "MFPT",
+          "signature": "func MFPT(k *markov.Kernel, tol float64) (*mat.Dense, error)",
+          "def": "$M_{i,j} = \\frac{Z_{j,j} - Z_{i,j}}{\\pi_j} \\;\\; (i \\neq j),\\quad M_{i,i} = 0$",
+          "req": "Ergodic (irreducible unichain, $\\pi_j > 0$ for all $j$)",
+          "err": "Returns `ErrSingularOperator` if chain has transient states ($\\pi_j = 0$) or multiple recurrent classes",
+          "references": [
+            "urn:markov:sym:markov.ErrSingularOperator",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, Theorem 4.4.7 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:solve.MFPT.Kemeny_s_Constant_Row_Weighted_Sum",
+              "@type": "Invariant",
+              "name": "Kemeny's Constant (Row-Weighted Sum)",
+              "expr": "$\\forall i \\in \\{0,\\dots,n-1\\}:\\; \\sum_{j=0}^{n-1} M_{i,j} \\pi_j = \\text{tr}(Z) - 1 = K(P)$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.MFPT.First_Step_Recurrence",
+              "@type": "Invariant",
+              "name": "First-Step Recurrence",
+              "expr": "$\\forall i \\neq j:\\; M_{i,j} = 1 + \\sum_{r \\neq j} P_{i,r} M_{r,j}$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.MFPT.Zero_Diagonal",
+              "@type": "Invariant",
+              "name": "Zero Diagonal",
+              "expr": "$\\forall i:\\; M_{i,i} = 0$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:solve.MFPTToTarget",
+          "@type": "Function",
+          "name": "MFPTToTarget",
+          "signature": "func MFPTToTarget(k *markov.Kernel, target int, tol float64) ([]float64, error)",
+          "def": "$m_{\\text{target}} = 0,\\quad m_i = 1 + \\sum_{j \\neq \\text{target}} P_{i,j} m_j \\;\\; (i \\neq \\text{target})$",
+          "req": "$\\text{target} \\in \\{0,\\dots,n-1\\}$, target reachable from all $i \\in S$",
+          "err": "Returns `ErrSingularOperator` if target is unreachable from a closed trap class",
+          "references": [
+            "urn:markov:sym:markov.ErrSingularOperator",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), *Finite Markov Chains*, Theorem 3.3.5 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:solve.MFPTToTarget.Column_Consistency_w_Full_MFPT",
+              "@type": "Invariant",
+              "name": "Column Consistency w/ Full MFPT",
+              "expr": "$m_i = M_{i, \\text{target}}$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.MFPTToTarget.Absorbing_Fundamental_Equivalence",
+              "@type": "Invariant",
+              "name": "Absorbing Fundamental Equivalence",
+              "expr": "$m_T = (I - P_{T,T})^{-1} \\mathbf{1} = N \\mathbf{1} \\quad (T = S \\setminus \\{\\text{target}\\})$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:solve.MFPTDelta",
+          "@type": "Function",
+          "name": "MFPTDelta",
+          "signature": "func MFPTDelta(k *markov.Kernel, from, to, target int, delta, tol float64) (float64, error)",
+          "def": "$\\Delta m_{\\text{from},\\text{target}} = m_{\\text{from},\\text{target}}(\\tilde{P}) - m_{\\text{from},\\text{target}}(P),\\quad \\tilde{P}_{\\text{from},\\cdot} = (1-\\delta)P_{\\text{from},\\cdot} + \\delta e_{\\text{to}}^\\top,\\; \\delta \\in [0, 1]$",
+          "req": "$\\text{from}, \\text{to}, \\text{target} \\in \\{0,\\dots,n-1\\},\\; \\delta \\in [0, 1]$, perturbed row remains stochastic",
+          "err": "Returns `ErrNotStochastic` or `ErrSingularOperator` if perturbation is invalid or target unreachable",
+          "references": [
+            "urn:markov:sym:markov.ErrNotStochastic",
+            "urn:markov:sym:markov.ErrSingularOperator",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "stephen-mcelhose/soka-cli (`soka suggest` row perturbation sensitivity)",
+              "url": "https://github.com/stephen-mcelhose/soka-cli"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:solve.MFPTDelta.Zero_Perturbation_Identity",
+              "@type": "Invariant",
+              "name": "Zero-Perturbation Identity",
+              "expr": "$\\delta = 0 \\implies \\Delta m_{\\text{from},\\text{target}} = 0$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.MFPTDelta.Direct_Target_Shortcut_Monotonicity",
+              "@type": "Invariant",
+              "name": "Direct Target Shortcut Monotonicity",
+              "expr": "$\\text{to} = \\text{target} \\land \\delta > 0 \\implies \\Delta m_{\\text{from},\\text{target}} \\le 0$"
+            }
+          ]
+        }
+      ]
+    },
+    "classes": {
+      "@id": "urn:markov:file:solve/classes.go",
+      "@type": "File",
+      "path": "classes.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:solve.StateClasses",
+          "@type": "Type",
+          "name": "StateClasses",
+          "signature": "type StateClasses struct { SCCs [][]int; Recurrent [][]int; Transient []int; Periods map[int]int }"
+        },
+        {
+          "@id": "urn:markov:sym:solve.ClassifyStates",
+          "@type": "Function",
+          "name": "ClassifyStates",
+          "signature": "func ClassifyStates(k *markov.Kernel, tol float64) (*StateClasses, error)",
+          "def": "$i \\leftrightarrow j \\iff (P^t)_{i,j} > 0 \\land (P^s)_{j,i} > 0;\\quad d(i) = \\gcd\\{t \\ge 1 : (P^t)_{i,i} > 0\\}$",
+          "req": "$k \\neq \\text{nil},\\; \\varepsilon \\ge 0$",
+          "err": "Returns `ErrNotStochastic` if $k = \\text{nil}$",
+          "references": [
+            "urn:markov:sym:markov.ErrNotStochastic",
+            "urn:markov:sym:markov.Kernel",
+            "urn:markov:sym:solve.StateClasses"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Tarjan (1972), \"Depth-First Search and Linear Graph Algorithms\" (CMU PDF)",
+              "url": "https://www.cs.cmu.edu/~cdm/resources/Tarjan1972-sccs.pdf"
+            },
+            {
+              "@type": "Source",
+              "citation": "Kemeny & Snell (1976), Ch. I §1.2 (Full-Text PDF)",
+              "url": "https://pku.edu.cn"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:solve.ClassifyStates.Partition_Coverage",
+              "@type": "Invariant",
+              "name": "Partition Coverage",
+              "expr": "$\\text{SCCs}$ forms a valid $\\text{markov.Partition}$ of $\\{0,\\dots,n-1\\}$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.ClassifyStates.Closedness_of_Recurrent_Classes",
+              "@type": "Invariant",
+              "name": "Closedness of Recurrent Classes",
+              "expr": "$\\forall C \\in \\text{Recurrent},\\; \\forall i \\in C,\\; \\forall j \\notin C:\\; P_{i,j} \\le \\varepsilon$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.ClassifyStates.Class_Constant_Periodicity",
+              "@type": "Invariant",
+              "name": "Class-Constant Periodicity",
+              "expr": "$i \\leftrightarrow j \\implies d(i) = d(j)$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.ClassifyStates.Stationary_Support",
+              "@type": "Invariant",
+              "name": "Stationary Support",
+              "expr": "$\\pi_i > \\varepsilon \\implies i \\notin \\text{Transient}$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:solve.StateClasses.AsPartition",
+          "@type": "Method",
+          "name": "StateClasses.AsPartition",
+          "receiverType": "urn:markov:sym:solve.StateClasses",
+          "signature": "func (sc *StateClasses) AsPartition() markov.Partition",
+          "def": "$\\mathcal{B}_{\\text{SCC}} = \\text{markov.Partition}(\\text{sc.SCCs})$",
+          "references": [
+            "urn:markov:sym:markov.Partition",
+            "urn:markov:sym:solve.StateClasses"
+          ]
+        }
+      ]
+    },
+    "entropy": {
+      "@id": "urn:markov:file:solve/entropy.go",
+      "@type": "File",
+      "path": "entropy.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:solve.EntropyRate",
+          "@type": "Function",
+          "name": "EntropyRate",
+          "signature": "func EntropyRate(k *markov.Kernel, tol float64) (float64, error)",
+          "def": "$H(P) = -\\sum_{i=0}^{n-1} \\pi_i \\sum_{j=0}^{n-1} P_{i,j} \\log_2 P_{i,j} \\quad (0 \\log_2 0 := 0)$",
+          "req": "Unichain ($|\\text{Recurrent}(P)| = 1$)",
+          "err": "Returns `ErrSingularOperator` if stationary distribution $\\pi$ is non-unique",
+          "references": [
+            "urn:markov:sym:markov.ErrSingularOperator",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Cover & Thomas (2006), *Elements of Information Theory*, 2nd ed., Theorem 4.2.4 (Full-Text PDF)",
+              "url": "https://dl.icdst.org/pdfs/files/aea72e61329cd4684709fa24f15ac098.pdf"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:solve.EntropyRate.Bounds",
+              "@type": "Invariant",
+              "name": "Bounds",
+              "expr": "$0 \\le H(P) \\le \\log_2 n$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.EntropyRate.Deterministic_Zero_Bound",
+              "@type": "Invariant",
+              "name": "Deterministic Zero Bound",
+              "expr": "$P \\text{ permutation/absorbing} \\implies H(P) = 0$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.EntropyRate.Uniform_Maximum_Bound",
+              "@type": "Invariant",
+              "name": "Uniform Maximum Bound",
+              "expr": "$P_{i,j} = \\frac{1}{n} \\implies H(P) = \\log_2 n$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.EntropyRate.Lumpable_Data_Processing_Inequality",
+              "@type": "Invariant",
+              "name": "Lumpable Data Processing Inequality",
+              "expr": "$R(P, \\mathcal{B}) = 0 \\implies H(\\text{Lump}(P, \\mathcal{B})) \\le H(P) + \\varepsilon$",
+              "references": [
+                "urn:markov:sym:reduce.Lump"
+              ]
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:solve.KLDivergenceRate",
+          "@type": "Function",
+          "name": "KLDivergenceRate",
+          "signature": "func KLDivergenceRate(p, q *markov.Kernel, tol float64) (float64, error)",
+          "def": "$D_{\\text{KL}}(P \\,\\|\\, Q) = \\sum_{i=0}^{n-1} \\pi_i^{(P)} \\sum_{j=0}^{n-1} P_{i,j} \\log_2 \\frac{P_{i,j}}{Q_{i,j}}$",
+          "req": "$n_P = n_Q$, $P$ unichain; absolute continuity $P_{i,j} > \\varepsilon \\implies Q_{i,j} > \\varepsilon$ (otherwise $+\\infty$)",
+          "err": "Returns `ErrSingularOperator` if $P$ is not unichain or dimensions mismatch",
+          "references": [
+            "urn:markov:sym:markov.ErrSingularOperator",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Cover & Thomas (2006), *Elements of Information Theory*, 2nd ed., Ch. 2 & Ch. 4 (Full-Text PDF)",
+              "url": "https://dl.icdst.org/pdfs/files/aea72e61329cd4684709fa24f15ac098.pdf"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:solve.KLDivergenceRate.Gibbs_Inequality_Non_Negativity",
+              "@type": "Invariant",
+              "name": "Gibbs' Inequality (Non-Negativity)",
+              "expr": "$D_{\\text{KL}}(P \\,\\|\\, Q) \\ge -\\varepsilon$"
+            },
+            {
+              "@id": "urn:markov:inv:solve.KLDivergenceRate.Identity_of_Indiscernibles",
+              "@type": "Invariant",
+              "name": "Identity of Indiscernibles",
+              "expr": "$D_{\\text{KL}}(P \\,\\|\\, Q) = 0 \\iff \\forall i \\text{ with } \\pi_i^{(P)} > 0:\\; P_{i,\\cdot} = Q_{i,\\cdot}$"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "infer": {
+    "@id": "urn:markov:pkg:infer",
+    "@type": "Package",
+    "package": "infer",
+    "importPath": "github.com/stephen-mcelhose/markov/infer",
+    "dir": "infer",
+    "files": [
+      "doc.go",
+      "estimate.go",
+      "order.go"
+    ],
+    "dependsOn": [
+      "urn:markov:pkg:markov"
+    ],
+    "doc": {
+      "@id": "urn:markov:file:infer/doc.go",
+      "@type": "File",
+      "path": "doc.go"
+    },
+    "estimate": {
+      "@id": "urn:markov:file:infer/estimate.go",
+      "@type": "File",
+      "path": "estimate.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:infer.Estimator",
+          "@type": "Type",
+          "name": "Estimator",
+          "signature": "type Estimator struct { ... }"
+        },
+        {
+          "@id": "urn:markov:sym:infer.NewEstimator",
+          "@type": "Function",
+          "name": "NewEstimator",
+          "signature": "func NewEstimator(n int, names []string, prior, halflife float64) (*Estimator, error)",
+          "def": "$C^{(0)}_{i,j} = 0,\\quad \\alpha = \\text{prior} \\ge 0,\\quad \\gamma = \\begin{cases} 1 & h = 0 \\\\ 2^{-1/h} & h > 0 \\end{cases}$",
+          "req": "$n \\ge 1,\\; \\alpha \\ge 0,\\; h \\ge 0,\\; \\text{names} = \\text{nil} \\lor |\\text{names}| = n$",
+          "err": "Returns error if $n < 1$, $\\alpha < 0$, $h < 0$, or $|\\text{names}| \\notin \\{0, n\\}$",
+          "references": [
+            "urn:markov:sym:infer.Estimator"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Anderson & Goodman (1957), \"Statistical Inference about Markov Chains\" (Project Euclid PDF)",
+              "url": "https://projecteuclid.org"
+            },
+            {
+              "@type": "Source",
+              "citation": "stephen-mcelhose/soka-cli (`--halflife`)",
+              "url": "https://github.com/stephen-mcelhose/soka-cli"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:infer.NewEstimator.Valid_Parameter_Bounds",
+              "@type": "Invariant",
+              "name": "Valid Parameter Bounds",
+              "expr": "$n \\ge 1 \\;\\land\\; \\alpha \\ge 0 \\;\\land\\; h \\ge 0$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:infer.Estimator.Observe",
+          "@type": "Method",
+          "name": "Estimator.Observe",
+          "receiverType": "urn:markov:sym:infer.Estimator",
+          "signature": "func (e *Estimator) Observe(from, to int) error",
+          "def": "$C^{(t)}_{i,j} = \\gamma C^{(t-1)}_{i,j} + \\mathbf{1}_{(i = \\text{from},\\; j = \\text{to})}$",
+          "req": "$\\text{from}, \\text{to} \\in \\{0, \\dots, n-1\\}$",
+          "err": "Returns error if $e = \\text{nil}$ or state indices are out of range $[0, n)$",
+          "references": [
+            "urn:markov:sym:infer.Estimator"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Murphy (2012), *Probabilistic Machine Learning*, §3.4 \"Dirichlet-Multinomial Model\" (Open-Access Book)",
+              "url": "https://probml.github.io/pml-book/"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:infer.Estimator.Observe.Non_Negativity",
+              "@type": "Invariant",
+              "name": "Non-Negativity",
+              "expr": "$\\forall i, j:\\; C^{(t)}_{i,j} \\ge 0$"
+            },
+            {
+              "@id": "urn:markov:inv:infer.Estimator.Observe.Unit_Memory_Additive_Equivalence",
+              "@type": "Invariant",
+              "name": "Unit-Memory Additive Equivalence",
+              "expr": "$h = 0 \\implies C^{(T)}_{i,j} = \\sum_{t=1}^T \\mathbf{1}_{(i_t = i,\\; j_t = j)}$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:infer.Estimator.ObserveSequence",
+          "@type": "Method",
+          "name": "Estimator.ObserveSequence",
+          "receiverType": "urn:markov:sym:infer.Estimator",
+          "signature": "func (e *Estimator) ObserveSequence(states []int) error",
+          "def": "$\\forall t \\in \\{0, \\dots, T-2\\}:\\; \\text{Observe}(s_t, s_{t+1})$",
+          "req": "$\\forall s \\in \\text{states}:\\; s \\in \\{0, \\dots, n-1\\}$",
+          "err": "Returns error if $e = \\text{nil}$ or any state index is out of range $[0, n)$",
+          "references": [
+            "urn:markov:sym:infer.Estimator"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Billingsley (1961), *Statistical Inference for Markov Processes*, Ch. 1 (JSTOR)",
+              "url": "https://jstor.org"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:infer.Estimator.ObserveSequence.Sequential_Composition",
+              "@type": "Invariant",
+              "name": "Sequential Composition",
+              "expr": "$\\text{ObserveSequence}([s_0, \\dots, s_k, \\dots, s_T]) \\equiv \\text{ObserveSequence}([s_0, \\dots, s_k]) \\circ \\text{ObserveSequence}([s_k, \\dots, s_T])$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:infer.Estimator.Kernel",
+          "@type": "Method",
+          "name": "Estimator.Kernel",
+          "receiverType": "urn:markov:sym:infer.Estimator",
+          "signature": "func (e *Estimator) Kernel(tol float64) (*markov.Kernel, error)",
+          "def": "$\\hat{P}_{i,j} = \\frac{C_{i,j} + \\alpha}{\\sum_{r=0}^{n-1} (C_{i,r} + \\alpha)}$",
+          "req": "$\\forall i:\\; \\sum_{r=0}^{n-1} (C_{i,r} + \\alpha) > \\varepsilon$",
+          "err": "Returns `ErrNotStochastic` if any row has zero count and $\\alpha = 0$",
+          "references": [
+            "urn:markov:sym:infer.Estimator",
+            "urn:markov:sym:markov.ErrNotStochastic",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Anderson & Goodman (1957), Theorem 2.1 (MLE)",
+              "url": "https://projecteuclid.org"
+            },
+            {
+              "@type": "Source",
+              "citation": "Murphy (2012), §3.4.1 (MAP / Posterior Predictive)",
+              "url": "https://probml.github.io/pml-book/"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:infer.Estimator.Kernel.Row_Stochasticity",
+              "@type": "Invariant",
+              "name": "Row Stochasticity",
+              "expr": "$\\forall i:\\; \\hat{P}_{i,j} \\ge 0 \\;\\land\\; \\left|\\sum_j \\hat{P}_{i,j} - 1\\right| \\le \\varepsilon$"
+            },
+            {
+              "@id": "urn:markov:inv:infer.Estimator.Kernel.Uniform_Prior_Identity",
+              "@type": "Invariant",
+              "name": "Uniform Prior Identity",
+              "expr": "$C = 0 \\;\\land\\; \\alpha > 0 \\implies \\hat{P}_{i,j} = \\frac{1}{n}$"
+            },
+            {
+              "@id": "urn:markov:inv:infer.Estimator.Kernel.Scale_Invariance_Infinite_Memory",
+              "@type": "Invariant",
+              "name": "Scale Invariance (Infinite Memory)",
+              "expr": "$h = 0 \\;\\land\\; \\alpha = 0 \\;\\land\\; c > 0 \\implies \\text{Kernel}(c \\cdot C) = \\text{Kernel}(C)$",
+              "references": [
+                "urn:markov:sym:markov.Kernel"
+              ]
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:infer.FromTransitions",
+          "@type": "Function",
+          "name": "FromTransitions",
+          "signature": "func FromTransitions(pairs []int, n int, prior float64, tol float64) (*markov.Kernel, error)",
+          "def": "$\\hat{P}_{i,j} = \\frac{N_{i,j} + \\alpha}{\\sum_{r=0}^{n-1} (N_{i,r} + \\alpha)}$",
+          "req": "$|\\text{pairs}| \\text{ even}$, indices $\\in \\{0, \\dots, n-1\\}$",
+          "err": "Returns error on odd-length pairs, out-of-range indices, or zero-sum rows",
+          "references": [
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Anderson & Goodman (1957), Theorem 2.1",
+              "url": "https://projecteuclid.org"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:infer.FromTransitions.Estimator_Parity",
+              "@type": "Invariant",
+              "name": "Estimator Parity",
+              "expr": "$\\text{FromTransitions}(\\text{pairs}, n, \\alpha, \\varepsilon) = \\text{NewEstimator}(n, \\text{nil}, \\alpha, 0).\\text{ObservePairs}(\\text{pairs}).\\text{Kernel}(\\varepsilon)$",
+              "references": [
+                "urn:markov:sym:infer.FromTransitions",
+                "urn:markov:sym:infer.NewEstimator",
+                "urn:markov:sym:markov.Kernel"
+              ]
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:infer.FromSequence",
+          "@type": "Function",
+          "name": "FromSequence",
+          "signature": "func FromSequence(states []int, n int, prior, halflife, tol float64) (*markov.Kernel, error)",
+          "def": "$\\hat{P}_{i,j} = \\frac{\\sum_{t=0}^{T-2} \\gamma^{T-2-t} \\mathbf{1}_{(s_t=i,\\, s_{t+1}=j)} + \\alpha}{\\sum_{r=0}^{n-1} \\left(\\sum_{t=0}^{T-2} \\gamma^{T-2-t} \\mathbf{1}_{(s_t=i,\\, s_{t+1}=r)} + \\alpha\\right)}$",
+          "req": "$|\\text{states}| \\ge 2$, indices $\\in \\{0, \\dots, n-1\\}$, $\\alpha \\ge 0,\\; h \\ge 0$",
+          "err": "Returns error on invalid state indices, parameters, or zero-sum rows",
+          "references": [
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Anderson & Goodman (1957)",
+              "url": "https://projecteuclid.org"
+            },
+            {
+              "@type": "Source",
+              "citation": "stephen-mcelhose/soka-cli",
+              "url": "https://github.com/stephen-mcelhose/soka-cli"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:infer.FromSequence.Consistency_Asymptotic_Convergence",
+              "@type": "Invariant",
+              "name": "Consistency (Asymptotic Convergence)",
+              "expr": "$T \\to \\infty,\\; h = 0 \\implies \\hat{P} \\xrightarrow{\\text{a.s.}} P_{\\text{true}}$"
+            }
+          ]
+        }
+      ]
+    },
+    "order": {
+      "@id": "urn:markov:file:infer/order.go",
+      "@type": "File",
+      "path": "order.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:infer.MarkovOrderTest",
+          "@type": "Function",
+          "name": "MarkovOrderTest",
+          "signature": "func MarkovOrderTest(states []int, n int) (chi2, pValue float64, err error)",
+          "def": "$G^2 = 2 \\sum_{i,j,k} N_{i,j,k} \\ln \\frac{\\hat{P}_{i,j,k}}{\\hat{P}_{j,k}} \\;\\sim\\; \\chi^2_{n(n-1)^2} \\quad (0 \\ln 0 := 0),\\quad \\hat{P}_{i,j,k} = \\frac{N_{i,j,k}}{N_{i,j,\\cdot}},\\; \\hat{P}_{j,k} = \\frac{N_{\\cdot,j,k}}{N_{\\cdot,j,\\cdot}}$",
+          "req": "$|\\text{states}| \\ge 3$, indices $\\in \\{0, \\dots, n-1\\}$",
+          "err": "Returns error if $|\\text{states}| < 3$, $n < 2$, or any state index is out of range",
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Anderson & Goodman (1957), \"Statistical Inference about Markov Chains\", §3.2 \"Tests of the Order of a Markov Chain\", p. 99",
+              "url": "https://projecteuclid.org"
+            },
+            {
+              "@type": "Source",
+              "citation": "Billingsley (1961), Theorem 3.1 (JSTOR)",
+              "url": "https://jstor.org"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:infer.MarkovOrderTest.Non_Negativity_Valid_p_Value",
+              "@type": "Invariant",
+              "name": "Non-Negativity & Valid p-Value",
+              "expr": "$G^2 \\ge 0 \\;\\land\\; p \\in [0, 1]$"
+            },
+            {
+              "@id": "urn:markov:inv:infer.MarkovOrderTest.First_Order_Identity",
+              "@type": "Invariant",
+              "name": "First-Order Identity",
+              "expr": "$\\forall i, j, k:\\; \\hat{P}_{i,j,k} = \\hat{P}_{j,k} \\implies G^2 = 0 \\;\\land\\; p = 1$"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "control": {
+    "@id": "urn:markov:pkg:control",
+    "@type": "Package",
+    "package": "control",
+    "importPath": "github.com/stephen-mcelhose/markov/control",
+    "dir": "control",
+    "files": [
+      "doc.go",
+      "mdp.go",
+      "dp.go",
+      "bisim.go"
+    ],
+    "dependsOn": [
+      "urn:markov:pkg:markov",
+      "urn:markov:pkg:reduce"
+    ],
+    "doc": {
+      "@id": "urn:markov:file:control/doc.go",
+      "@type": "File",
+      "path": "doc.go"
+    },
+    "bisim": {
+      "@id": "urn:markov:file:control/bisim.go",
+      "@type": "File",
+      "path": "bisim.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:control.MDP.CoarsestPartition",
+          "@type": "Method",
+          "name": "MDP.CoarsestPartition",
+          "receiverType": "urn:markov:sym:control.MDP",
+          "signature": "func (m *MDP) CoarsestPartition(tol float64) (markov.Partition, error)",
+          "def": "$s \\sim s' \\iff \\forall a \\in A:\\; |R(s, a) - R(s', a)| \\le \\varepsilon \\;\\land\\; \\forall B \\in \\mathcal{B}^*,\\; \\left|\\sum_{t \\in B} P^a_{s, t} - \\sum_{t \\in B} P^a_{s', t}\\right| \\le \\varepsilon$",
+          "req": "$m \\neq \\text{nil},\\; \\varepsilon \\ge 0$",
+          "err": "Returns error if $m = \\text{nil}$",
+          "references": [
+            "urn:markov:sym:control.MDP",
+            "urn:markov:sym:markov.Partition"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Givan, Dean & Greig (2003), \"Equivalence Notions and Model Minimization in Markov Decision Processes\" (Purdue PDF)",
+              "url": "https://engineering.purdue.edu/~givan/papers/mm.pdf"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:control.MDP.CoarsestPartition.Action_Wise_Strong_Lumpability",
+              "@type": "Invariant",
+              "name": "Action-Wise Strong Lumpability",
+              "expr": "$\\forall a \\in A:\\; \\text{reduce.IsStronglyLumpable}(P^a, \\mathcal{B}^*, \\varepsilon) = \\text{true}$"
+            },
+            {
+              "@id": "urn:markov:inv:control.MDP.CoarsestPartition.Optimal_Value_Invariance",
+              "@type": "Invariant",
+              "name": "Optimal Value Invariance",
+              "expr": "$s, s' \\in B_i \\implies |V^*(s) - V^*(s')| \\le \\frac{2\\varepsilon}{1 - \\gamma}$"
+            },
+            {
+              "@id": "urn:markov:inv:control.MDP.CoarsestPartition.Passive_Chain_Degeneration",
+              "@type": "Invariant",
+              "name": "Passive Chain Degeneration",
+              "expr": "$|A| = 1 \\land R \\equiv 0 \\implies \\mathcal{B}^* = \\text{reduce.CoarsestPartition}(P^{a_0}, \\text{nil}, \\varepsilon)$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:control.MDPBisimulation",
+          "@type": "Function",
+          "name": "MDPBisimulation",
+          "signature": "func MDPBisimulation(m *MDP, tol float64) (markov.Partition, error)",
+          "def": "$\\text{m.CoarsestPartition}(\\varepsilon)$",
+          "delegatesTo": "urn:markov:sym:control.MDP.CoarsestPartition",
+          "references": [
+            "urn:markov:sym:control.MDP",
+            "urn:markov:sym:control.MDP.CoarsestPartition",
+            "urn:markov:sym:markov.Partition"
+          ]
+        }
+      ]
+    },
+    "mdp": {
+      "@id": "urn:markov:file:control/mdp.go",
+      "@type": "File",
+      "path": "mdp.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:control.MDP",
+          "@type": "Type",
+          "name": "MDP",
+          "signature": "type MDP struct { Actions []string; Transitions []*markov.Kernel; Rewards *mat.Dense; Discount float64 }",
+          "references": [
+            "urn:markov:sym:markov.Kernel"
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:control.NewMDP",
+          "@type": "Function",
+          "name": "NewMDP",
+          "signature": "func NewMDP(actions []string, transitions []*markov.Kernel, rewards *mat.Dense, discount, tol float64) (*MDP, error)",
+          "def": "$\\mathcal{M} = (S, A, \\{P^a\\}_{a \\in A}, R, \\gamma),\\quad R \\in \\mathbb{R}^{|S| \\times |A|},\\quad \\gamma \\in [0, 1)$",
+          "req": "$|A| \\ge 1,\\; |\\text{Transitions}| = |A|,\\; \\forall a: P^a \\in \\mathbb{R}^{n \\times n},\\; \\dim(R) = (n, |A|),\\; \\gamma \\in [0, 1)$",
+          "err": "Returns error on empty actions, mismatched transition count/dimensions, invalid reward matrix, or $\\gamma \\notin [0, 1)$",
+          "references": [
+            "urn:markov:sym:control.MDP",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Stanford University — Markov Decision Processes (Ch. 3, following Puterman)",
+              "url": "https://stanford.edu/~ashlearn/RLForFinanceBook/chapter3.pdf"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:control.NewMDP.Kernel_Dimension_Consistency",
+              "@type": "Invariant",
+              "name": "Kernel & Dimension Consistency",
+              "expr": "$\\forall a \\in A:\\; P^a \\text{ is } n \\times n \\text{ row-stochastic} \\;\\land\\; \\dim(R) = (n, |A|) \\;\\land\\; 0 \\le \\gamma < 1$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:control.MDP.NumStates",
+          "@type": "Method",
+          "name": "MDP.NumStates",
+          "receiverType": "urn:markov:sym:control.MDP",
+          "signature": "func (m *MDP) NumStates() int",
+          "def": "$n = |S|$",
+          "references": [
+            "urn:markov:sym:control.MDP"
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:control.MDP.NumActions",
+          "@type": "Method",
+          "name": "MDP.NumActions",
+          "receiverType": "urn:markov:sym:control.MDP",
+          "signature": "func (m *MDP) NumActions() int",
+          "def": "$k = |A|$",
+          "references": [
+            "urn:markov:sym:control.MDP"
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:control.MDP.InducedKernel",
+          "@type": "Method",
+          "name": "MDP.InducedKernel",
+          "receiverType": "urn:markov:sym:control.MDP",
+          "signature": "func (m *MDP) InducedKernel(policy []int, tol float64) (*markov.Kernel, error)",
+          "def": "$P^\\pi_{s, s'} = P^{\\pi(s)}_{s, s'},\\quad \\pi: S \\to A$",
+          "req": "$m \\neq \\text{nil},\\; |\\text{policy}| = n,\\; \\forall s: \\pi(s) \\in \\{0, \\dots, |A|-1\\}$",
+          "err": "Returns error if $m = \\text{nil}$, $|\\text{policy}| \\neq n$, or any action index is out of bounds",
+          "references": [
+            "urn:markov:sym:control.MDP",
+            "urn:markov:sym:markov.Kernel"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "ENSTA Paris / École Polytechnique — Markov Decision Processes: Dynamic Programming and Applications",
+              "url": "http://www.cmap.polytechnique.fr/~akian/cours-ensta/Lecture_Notes_Akian-ENSTA-Saclay.pdf"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:control.MDP.InducedKernel.Row_Stochasticity",
+              "@type": "Invariant",
+              "name": "Row Stochasticity",
+              "expr": "$P^\\pi$ is a valid $n \\times n$ `markov.Kernel`"
+            },
+            {
+              "@id": "urn:markov:inv:control.MDP.InducedKernel.Constant_Action_Identity",
+              "@type": "Invariant",
+              "name": "Constant-Action Identity",
+              "expr": "$(\\forall s:\\; \\pi(s) = a) \\implies P^\\pi = P^a$"
+            }
+          ]
+        }
+      ]
+    },
+    "dp": {
+      "@id": "urn:markov:file:control/dp.go",
+      "@type": "File",
+      "path": "dp.go",
+      "symbols": [
+        {
+          "@id": "urn:markov:sym:control.MDP.ValueIteration",
+          "@type": "Method",
+          "name": "MDP.ValueIteration",
+          "receiverType": "urn:markov:sym:control.MDP",
+          "signature": "func (m *MDP) ValueIteration(tol float64) (policy []int, values []float64, err error)",
+          "def": "$V_{t+1}(s) = \\max_{a \\in A} \\left[ R(s, a) + \\gamma \\sum_{s' \\in S} P^a_{s, s'} V_t(s') \\right]$",
+          "req": "$m \\neq \\text{nil},\\; \\gamma \\in [0, 1),\\; \\varepsilon > 0$",
+          "err": "Returns error if $m = \\text{nil}$ or $\\varepsilon \\le 0$",
+          "references": [
+            "urn:markov:sym:control.MDP"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Stanford University — Bellman Optimality & Value Iteration (Ch. 3, §1.10–1.11)",
+              "url": "https://stanford.edu/~ashlearn/RLForFinanceBook/chapter3.pdf"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:control.MDP.ValueIteration.Bellman_Optimality_Fixed_Point",
+              "@type": "Invariant",
+              "name": "Bellman Optimality Fixed Point",
+              "expr": "$\\|V^* - \\mathcal{T}^* V^*\\|_\\infty \\le \\varepsilon$"
+            },
+            {
+              "@id": "urn:markov:inv:control.MDP.ValueIteration.Myopic_Horizon_Identity",
+              "@type": "Invariant",
+              "name": "Myopic Horizon Identity",
+              "expr": "$\\gamma = 0 \\implies V^*(s) = \\max_{a \\in A} R(s, a)$"
+            },
+            {
+              "@id": "urn:markov:inv:control.MDP.ValueIteration.Policy_Value_Consistency",
+              "@type": "Invariant",
+              "name": "Policy-Value Consistency",
+              "expr": "$(I - \\gamma P^{\\pi^*}) V^* = R^{\\pi^*} \\pm \\varepsilon$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:control.MDP.PolicyIteration",
+          "@type": "Method",
+          "name": "MDP.PolicyIteration",
+          "receiverType": "urn:markov:sym:control.MDP",
+          "signature": "func (m *MDP) PolicyIteration(tol float64) (policy []int, values []float64, err error)",
+          "def": "$V^{\\pi_t} = (I - \\gamma P^{\\pi_t})^{-1} R^{\\pi_t},\\quad \\pi_{t+1}(s) = \\arg\\max_{a \\in A} \\left[ R(s, a) + \\gamma \\sum_{s' \\in S} P^a_{s, s'} V^{\\pi_t}(s') \\right]$",
+          "req": "$m \\neq \\text{nil},\\; \\gamma \\in [0, 1),\\; \\varepsilon \\ge 0$",
+          "err": "Invertible for all $\\gamma \\in [0, 1)$ by Neumann series ($\\rho(\\gamma P^{\\pi_t}) = \\gamma < 1$); returns `ErrSingularOperator` only on numerical ill-conditioning as $\\gamma \\to 1^-$",
+          "references": [
+            "urn:markov:sym:control.MDP",
+            "urn:markov:sym:markov.ErrSingularOperator"
+          ],
+          "src": [
+            {
+              "@type": "Source",
+              "citation": "Howard (1960), *Dynamic Programming and Markov Processes* (Full-Text PDF)",
+              "url": "https://gwern.net/doc/statistics/decision/1960-howard-dynamicprogrammingmarkovprocesses.pdf"
+            }
+          ],
+          "invariants": [
+            {
+              "@id": "urn:markov:inv:control.MDP.PolicyIteration.Monotonic_Policy_Improvement",
+              "@type": "Invariant",
+              "name": "Monotonic Policy Improvement",
+              "expr": "$\\forall s \\in S:\\; V^{\\pi_{t+1}}(s) \\ge V^{\\pi_t}(s) - \\varepsilon$"
+            },
+            {
+              "@id": "urn:markov:inv:control.MDP.PolicyIteration.Value_Iteration_Equivalence",
+              "@type": "Invariant",
+              "name": "Value Iteration Equivalence",
+              "expr": "$\\|V^*_{\\text{PI}} - V^*_{\\text{VI}}\\|_\\infty \\le \\varepsilon$"
+            }
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:control.ValueIteration",
+          "@type": "Function",
+          "name": "ValueIteration",
+          "signature": "func ValueIteration(m *MDP, tol float64) (policy []int, values []float64, err error)",
+          "def": "$\\text{m.ValueIteration}(\\varepsilon)$",
+          "delegatesTo": "urn:markov:sym:control.MDP.ValueIteration",
+          "references": [
+            "urn:markov:sym:control.MDP",
+            "urn:markov:sym:control.MDP.ValueIteration"
+          ]
+        },
+        {
+          "@id": "urn:markov:sym:control.PolicyIteration",
+          "@type": "Function",
+          "name": "PolicyIteration",
+          "signature": "func PolicyIteration(m *MDP, tol float64) (policy []int, values []float64, err error)",
+          "def": "$\\text{m.PolicyIteration}(\\varepsilon)$",
+          "delegatesTo": "urn:markov:sym:control.MDP.PolicyIteration",
+          "references": [
+            "urn:markov:sym:control.MDP",
+            "urn:markov:sym:control.MDP.PolicyIteration"
+          ]
+        }
+      ]
+    }
+  }
+}

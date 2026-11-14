@@ -1,0 +1,373 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix markov: <https://github.com/stephen-mcelhose/markov/vocab#> .
+
+# =============================================================================
+# SurfaceGraph Shape
+# =============================================================================
+
+markov:SurfaceGraphShape
+    a sh:NodeShape ;
+    sh:targetClass markov:SurfaceGraph ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^urn:markov:surface$" ;
+    sh:property [
+        sh:path markov:module ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^github\\.com/stephen-mcelhose/markov$" ;
+        sh:message "SurfaceGraph MUST declare module github.com/stephen-mcelhose/markov." ;
+    ] ;
+    sh:property [
+        sh:path markov:hasPackage ;
+        sh:class markov:Package ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 5 ;
+        sh:message "SurfaceGraph MUST contain at least the 5 core Package nodes (layer1, reduce, solve, infer, control)." ;
+    ] .
+
+# =============================================================================
+# Package Shape
+# =============================================================================
+
+markov:PackageShape
+    a sh:NodeShape ;
+    sh:targetClass markov:Package ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^urn:markov:pkg:[a-z][a-z0-9]*$" ;
+    sh:property [
+        sh:path markov:package ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[a-z][a-z0-9]*$" ;
+        sh:message "Package MUST declare exactly one lowercase Go package identifier." ;
+    ] ;
+    sh:property [
+        sh:path markov:importPath ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^github\\.com/stephen-mcelhose/markov(/[a-z][a-z0-9]*)?$" ;
+        sh:message "Package MUST declare a valid module importPath under github.com/stephen-mcelhose/markov." ;
+    ] ;
+    sh:property [
+        sh:path markov:dir ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^(\\.|[a-z][a-z0-9]*)$" ;
+        sh:message "Package MUST declare a relative directory path." ;
+    ] ;
+    sh:property [
+        sh:path markov:dependsOn ;
+        sh:class markov:Package ;
+        sh:nodeKind sh:IRI ;
+        sh:message "Package dependsOn edges MUST reference valid Package IRIs." ;
+    ] ;
+    sh:property [
+        sh:path markov:hasFile ;
+        sh:class markov:File ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 2 ;
+        sh:message "Package MUST contain at least doc.go and one implementation File." ;
+    ] ;
+    sh:property [
+        sh:path markov:knownUnknown ;
+        sh:datatype xsd:string ;
+        sh:minLength 1 ;
+        sh:message "Package known_unknowns entries MUST be non-empty strings." ;
+    ] .
+
+# =============================================================================
+# File Shape
+# =============================================================================
+
+markov:FileShape
+    a sh:NodeShape ;
+    sh:targetClass markov:File ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^urn:markov:file:[a-z0-9]+/[a-z0-9_]+\\.go$" ;
+    sh:property [
+        sh:path markov:path ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[a-z0-9_]+\\.go$" ;
+        sh:message "File MUST declare a valid .go filename." ;
+    ] ;
+    sh:property [
+        sh:path markov:hasSymbol ;
+        sh:nodeKind sh:IRI ;
+        sh:message "File symbols MUST be IRI-identified symbol nodes." ;
+    ] .
+
+# =============================================================================
+# Error Symbol Shape
+# =============================================================================
+
+markov:ErrorShape
+    a sh:NodeShape ;
+    sh:targetClass markov:Error ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^urn:markov:sym:[a-z0-9]+\\.Err[A-Z][A-Za-z0-9]*$" ;
+    sh:property [
+        sh:path markov:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^Err[A-Z][A-Za-z0-9]*$" ;
+        sh:message "Error name MUST start with Err." ;
+    ] ;
+    sh:property [
+        sh:path markov:signature ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^var Err[A-Z][A-Za-z0-9]* error$" ;
+        sh:message "Error signature MUST match 'var ErrXxx error'." ;
+    ] .
+
+# =============================================================================
+# Type Symbol Shape
+# =============================================================================
+
+markov:TypeShape
+    a sh:NodeShape ;
+    sh:targetClass markov:Type ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^urn:markov:sym:[a-z0-9]+\\.[A-Z][A-Za-z0-9]*$" ;
+    sh:property [
+        sh:path markov:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z][A-Za-z0-9]*$" ;
+        sh:message "Type name MUST be an exported Go identifier." ;
+    ] ;
+    sh:property [
+        sh:path markov:signature ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^type [A-Z][A-Za-z0-9]* .+$" ;
+        sh:message "Type signature MUST be a valid exported Go type declaration." ;
+    ] ;
+    sh:property [
+        sh:path markov:references ;
+        sh:nodeKind sh:IRI ;
+        sh:message "Type references MUST be valid symbol IRIs." ;
+    ] .
+
+# =============================================================================
+# Function Symbol Shape
+# =============================================================================
+
+markov:FunctionShape
+    a sh:NodeShape ;
+    sh:targetClass markov:Function ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^urn:markov:sym:[a-z0-9]+\\.[A-Z][A-Za-z0-9]*$" ;
+    sh:property [
+        sh:path markov:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z][A-Za-z0-9]*$" ;
+        sh:message "Function name MUST be an exported Go identifier." ;
+    ] ;
+    sh:property [
+        sh:path markov:signature ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^func [A-Z][A-Za-z0-9]*\\(.*\\).*$" ;
+        sh:message "Function signature MUST be a valid top-level Go func signature." ;
+    ] ;
+    sh:property [
+        sh:path markov:def ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "\\$.+\\$" ;
+        sh:message "Function MUST have a mathematical definition (def) containing LaTeX $...$." ;
+    ] ;
+    sh:property [
+        sh:path markov:req ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:minLength 1 ;
+        sh:message "Function req, when present, MUST be a non-empty precondition specification." ;
+    ] ;
+    sh:property [
+        sh:path markov:err ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:minLength 1 ;
+        sh:message "Function err, when present, MUST be a non-empty error specification." ;
+    ] ;
+    sh:property [
+        sh:path markov:hasSource ;
+        sh:class markov:Source ;
+        sh:message "Function src entries MUST conform to markov:Source." ;
+    ] ;
+    sh:property [
+        sh:path markov:hasInvariant ;
+        sh:class markov:Invariant ;
+        sh:nodeKind sh:IRI ;
+        sh:message "Function invariants MUST be IRI-identified markov:Invariant nodes." ;
+    ] ;
+    sh:property [
+        sh:path markov:delegatesTo ;
+        sh:nodeKind sh:IRI ;
+        sh:maxCount 1 ;
+        sh:message "Function delegatesTo MUST reference at most one target Function or Method IRI." ;
+    ] ;
+    sh:property [
+        sh:path markov:references ;
+        sh:nodeKind sh:IRI ;
+        sh:message "Function references MUST be valid symbol IRIs." ;
+    ] .
+
+# =============================================================================
+# Method Symbol Shape
+# =============================================================================
+
+markov:MethodShape
+    a sh:NodeShape ;
+    sh:targetClass markov:Method ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^urn:markov:sym:[a-z0-9]+\\.[A-Z][A-Za-z0-9]*\\.[A-Z][A-Za-z0-9]*$" ;
+    sh:property [
+        sh:path markov:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[A-Z][A-Za-z0-9]*\\.[A-Z][A-Za-z0-9]*$" ;
+        sh:message "Method name MUST follow Type.Method format." ;
+    ] ;
+    sh:property [
+        sh:path markov:receiverType ;
+        sh:class markov:Type ;
+        sh:nodeKind sh:IRI ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Method MUST reference its receiverType (markov:Type IRI)." ;
+    ] ;
+    sh:property [
+        sh:path markov:signature ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^func \\([^)]+\\) [A-Z][A-Za-z0-9]*\\(.*\\).*$" ;
+        sh:message "Method signature MUST be a valid Go method signature with receiver." ;
+    ] ;
+    sh:property [
+        sh:path markov:def ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "\\$.+\\$" ;
+        sh:message "Method MUST have a mathematical definition (def) containing LaTeX $...$." ;
+    ] ;
+    sh:property [
+        sh:path markov:req ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:minLength 1 ;
+        sh:message "Method req, when present, MUST be a non-empty precondition specification." ;
+    ] ;
+    sh:property [
+        sh:path markov:err ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:minLength 1 ;
+        sh:message "Method err, when present, MUST be a non-empty error specification." ;
+    ] ;
+    sh:property [
+        sh:path markov:hasSource ;
+        sh:class markov:Source ;
+        sh:message "Method src entries MUST conform to markov:Source." ;
+    ] ;
+    sh:property [
+        sh:path markov:hasInvariant ;
+        sh:class markov:Invariant ;
+        sh:nodeKind sh:IRI ;
+        sh:message "Method invariants MUST be IRI-identified markov:Invariant nodes." ;
+    ] ;
+    sh:property [
+        sh:path markov:delegatesTo ;
+        sh:nodeKind sh:IRI ;
+        sh:maxCount 1 ;
+        sh:message "Method delegatesTo MUST reference at most one target Function or Method IRI." ;
+    ] ;
+    sh:property [
+        sh:path markov:references ;
+        sh:nodeKind sh:IRI ;
+        sh:message "Method references MUST be valid symbol IRIs." ;
+    ] .
+
+# =============================================================================
+# Source Citation Shape
+# =============================================================================
+
+markov:SourceShape
+    a sh:NodeShape ;
+    sh:targetClass markov:Source ;
+    sh:property [
+        sh:path markov:citation ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minLength 3 ;
+        sh:message "Source MUST have a non-empty citation string." ;
+    ] ;
+    sh:property [
+        sh:path markov:url ;
+        sh:datatype xsd:anyURI ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^https?://.+$" ;
+        sh:message "Source MUST have a valid http/https URL." ;
+    ] ;
+    sh:property [
+        sh:path markov:title ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:minLength 1 ;
+        sh:message "Source title, when present, MUST be a non-empty string." ;
+    ] .
+
+# =============================================================================
+# Invariant Shape
+# =============================================================================
+
+markov:InvariantShape
+    a sh:NodeShape ;
+    sh:targetClass markov:Invariant ;
+    sh:nodeKind sh:IRI ;
+    sh:pattern "^urn:markov:inv:[a-z0-9]+\\.[A-Za-z0-9._]+$" ;
+    sh:property [
+        sh:path markov:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minLength 2 ;
+        sh:message "Invariant MUST have a descriptive name." ;
+    ] ;
+    sh:property [
+        sh:path markov:expr ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "\\$.+\\$" ;
+        sh:message "Invariant MUST have a mathematical expression (expr) containing LaTeX $...$." ;
+    ] ;
+    sh:property [
+        sh:path markov:references ;
+        sh:nodeKind sh:IRI ;
+        sh:message "Invariant references MUST be valid symbol IRIs." ;
+    ] .
