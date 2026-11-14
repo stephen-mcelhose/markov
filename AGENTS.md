@@ -32,7 +32,7 @@ Test should be written for all public functions and methods.
 
 ### Fuzzing
 
-Fuzzing, or mathematical mutation testing, should be used to test the robustness of the library. Fuzzing should assert all invariants of the library.
+Fuzzing, or mathematical mutation testing, should be used to test the robustness of the library. Fuzzing should assert all invariants of the library. Use `pgregory.net/rapid` 
 
 ## Documentation
 
@@ -44,10 +44,26 @@ Fuzzing, or mathematical mutation testing, should be used to test the robustness
 
 ## Examples
 
-1. Go examples SHOULD be written for all public functions and methods.
-2. Examples SHOULD be runnable (`// Output:`) and MUST follow standard Go `testing` example naming conventions (`ExampleFunc`, `ExampleType_Method`).
-3. Examples MAY be deferred until a second-phase documentation pass.
+1. Examples MUST be standard Go runnable examples (`example_test.go` using `func Example...()` and `// Output:` assertions) verified by `go test ./...`.
+2. Examples SHOULD target the Dreyfus Stage 2 (Advanced Beginner) audience — Go engineers who write idiomatic Go and are building intuition for stochastic linear algebra — by leading each example's doc comment with a concrete systems scenario and situational maxim, and telling a cohesive story that shows the operational benefit.
+3. Each package SHOULD include a package-level `func Example()` walkthrough telling an end-to-end systems story alongside symbol-level `func ExampleFunc()` / `func ExampleType_Method()` examples.
+   - See [docs/personas/dreyfus-stage-2.md](docs/personas/dreyfus-stage-2.md) for the persona profile, narrative arc, and situational maxims across packages.
+4. Examples MAY be deferred until a second-phase documentation pass.
 
+
+## Group Definition of Done
+
+Before committing or starting the next work group, every change MUST pass the following validation pipeline in order:
+
+1. **Surface & Persona Schema Sync (`make surface`)**:
+   - If `docs/architecture.md` changed, run `make surface-emit` to regenerate `docs/surface/surface.jsonld`.
+   - Verify `docs/surface/surface.jsonld` against `docs/surface/context.jsonld` and `docs/surface/surface.shacl.ttl`, and verify `docs/personas/*.md` against `docs/personas/persona.shacl.ttl`.
+2. **AST & Policy Verification (`make surface-ast`)**:
+   - Verify implemented Go packages match the exact file/symbol signatures in `docs/surface/surface.jsonld`, have `doc.go` and exported symbol comments without raw LaTeX backslashes, keep `func Test*` names free of RFC 2119 keywords, and include situational-maxim comments + `// Output:` blocks on all `func Example*` functions.
+3. **Static Checks, Unit/Property/Example Tests & Spec Report (`make check && make spec`)**:
+   - Runs `fmt-check`, `vet`, `surface`, `surface-ast`, `go test -count=1 ./...` (including `pgregory.net/rapid` property checks and `Example*` output assertions), and `./tools/testspec` to verify RFC 2119 specable sub-tests.
+4. **Critic Math & Policy Review**:
+   - Spawn a `critic` agent to math-review and policy-review all new or modified files in the completed group against `docs/architecture.md` and `AGENTS.md`. Resolve any BLOCKING findings before proceeding; document ADVISORY ones in context.
 
 ## Self-Maintenance
 
@@ -73,3 +89,17 @@ markov/
 ├── infer/           # MLE/Dirichlet estimation from streams, EMA decay, order tests
 └── control/         # MDPs, Value/Policy Iteration, MDP bisimulation
 ```
+
+
+## DAG Order List
+
+	1. Layer 1 (markov): errors.go, kernel.go, distribution.go, partition.go, plus shared rapid generators for random stochastic kernels and partitions.
+	2. Structural & Ergodic Solvers (solve): classes.go \(\rightarrow \) stationary.go (GTH) \(\rightarrow \) fundamental.go \(\rightarrow \) mfpt.go \(\rightarrow \) entropy.go (needed to test stationary preservation in reduce).
+	3. Model Reduction (reduce): trace.go \(\rightarrow \) lump.go \(\rightarrow \) bisim.go.
+	4. Inference & Control (infer, control): estimate.go, order.go, mdp.go, dp.go, bisim.go.
+
+
+## Known Unknowns Protocol
+When implementing a package, read known_unknowns.list first; pick the most standard mathematical default, document the choice in doc.go, and remove the resolved item from known_unknowns.list.
+
+
