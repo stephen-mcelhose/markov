@@ -1,14 +1,11 @@
 MODULE  ?= github.com/stephen-mcelhose/markov
-CMD     ?= ./cmd/markov
-BIN_DIR ?= bin
-BINARY  ?= markov
 GO      ?= go
 GOTEST  ?= $(GO) test
 GOFLAGS ?=
 
 .DEFAULT_GOAL := check
 
-.PHONY: help check check-all build run test test-race spec spec-all surface surface-ast surface-emit docs-gen cover vet fmt fmt-check lint tidy generate clean
+.PHONY: help check check-all test test-race spec spec-all surface surface-ast surface-emit docs-gen cover vet fmt fmt-check lint tidy generate clean
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -16,13 +13,6 @@ help: ## List available targets
 check: fmt-check vet surface surface-ast test ## Fast pre-commit checks (default)
 
 check-all: fmt-check vet surface surface-ast lint test-race spec ## Full CI-style suite
-
-build: ## Build cmd/markov into bin/
-	@mkdir -p $(BIN_DIR)
-	CGO_ENABLED=0 $(GO) build $(GOFLAGS) -trimpath -o $(BIN_DIR)/$(BINARY) $(CMD)
-
-run: ## Run cmd/markov
-	$(GO) run $(GOFLAGS) $(CMD)
 
 test: ## Run unit tests
 	$(GOTEST) $(GOFLAGS) -count=1 ./...
@@ -71,5 +61,5 @@ tidy: ## Tidy go.mod / go.sum
 generate: ## Run go generate
 	$(GO) generate $(GOFLAGS) ./...
 
-clean: ## Remove build and coverage artifacts
-	rm -rf $(BIN_DIR) coverage.out coverage.html
+clean: ## Remove coverage artifacts
+	rm -f coverage.out coverage.html
