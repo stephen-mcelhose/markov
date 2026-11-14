@@ -14,45 +14,21 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strings"
 )
 
-var (
-	showAll = flag.Bool("all", false, "also show non-specable sub-tests (those without RFC 2119 keywords)")
+// rfc2119 matches any RFC 2119 keyword appearing as a whole word.
+// Longer phrases must precede their prefixes (MUST NOT before MUST).
+var rfc2119 = regexp.MustCompile(`\b(MUST NOT|MUST|SHOULD NOT|SHOULD|SHALL NOT|SHALL|REQUIRED|RECOMMENDED|OPTIONAL|MAY)\b`)
 
-	// rfc2119 matches any RFC 2119 keyword appearing as a whole word.
-	// Order matters: longer phrases must come before their prefixes.
-	rfc2119 = regexp.MustCompile(`\b(MUST NOT|MUST|SHOULD NOT|SHOULD|SHALL NOT|SHALL|REQUIRED|RECOMMENDED|OPTIONAL|MAY)\b`)
-)
-
-// subResult holds the parsed result of one sub-test run.
-type subResult struct {
-	testFunc string // e.g. "TestNewKernel"
-	subName  string // humanized sub-test name (underscores → spaces)
-	passed   bool
-}
-
-// pkgResult accumulates everything emitted for one package.
-type pkgResult struct {
-	pkg        string
-	subs       []subResult
-	funcOrder  []string          // insertion-ordered test function names
-	byFunc     map[string][]subResult
-	passed     bool
-	buildFailed bool
-}
-
-func newPkgResult() pkgResult {
-	return pkgResult{byFunc: make(map[string][]subResult)}
-}
-
-func isSpecable(name string) bool { return rfc2119.MatchString(name) }
+// IsSpecable reports whether name contains at least one RFC 2119 keyword.
+func IsSpecable(name string) bool { return rfc2119.MatchString(name) }
 
 func humanize(s string) string { return strings.ReplaceAll(s, "_", " ") }
 
-// stripTiming removes the trailing " (0.00s)" appended by go test.
 func stripTiming(s string) string {
 	if i := strings.LastIndex(s, " ("); i >= 0 {
 		return s[:i]
@@ -60,8 +36,6 @@ func stripTiming(s string) string {
 	return s
 }
 
-// parseResultLine parses "--- PASS: name (xs)" or "--- FAIL: name (xs)".
-// Returns the full test name, whether it passed, and whether parsing succeeded.
 func parseResultLine(line string) (name string, passed bool, ok bool) {
 	switch {
 	case strings.HasPrefix(line, "--- PASS: "):
@@ -72,40 +46,49 @@ func parseResultLine(line string) (name string, passed bool, ok bool) {
 	return "", false, false
 }
 
-func main() {
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: go test -v ./... | testspec [--all]\n\n")
-		flag.PrintDefaults()
-	}
-	flag.Parse()
+type subResult struct {
+	testFunc string
+	subName  string // humanized
+	passed   bool
+}
 
-	var (
-		pkgs    []pkgResult
-		current = newPkgResult()
-	)
+type pkgResult struct {
+	pkg         string
+	funcOrder   []string
+	byFunc      map[string][]subResult
+	passed      bool
+	buildFailed bool
+}
 
-	scanner := bufio.NewScanner(os.Stdin)
+func newPkgResult() pkgResult {
+	return pkgResult{byFunc: make(map[string][]subResult)}
+}
+
+// run parses go test -v output from r and writes a spec report to w.
+// Returns 0 on success, 1 if any test failed or a package failed to build.
+func run(r io.Reader, w io.Writer, showAll bool) int {
+	var pkgs []pkgResult
+	current := newPkgResult()
+
+	scanner := bufio.NewScanner(r)
 	scanner.Buffer(make([]byte, 4<<20), 4<<20)
 
 	for scanner.Scan() {
-		line := scanner.Text()
-
+		line := strings.TrimSpace(scanner.Text())
 		switch {
 		case strings.HasPrefix(line, "--- PASS: ") || strings.HasPrefix(line, "--- FAIL: "):
 			name, passed, ok := parseResultLine(line)
 			if !ok {
 				continue
 			}
-			// Only sub-tests (names containing "/") belong to our spec output.
 			slashIdx := strings.Index(name, "/")
 			if slashIdx < 0 {
-				continue
+				continue // top-level result; not a sub-test
 			}
 			testFunc := name[:slashIdx]
-			subRaw := name[slashIdx+1:]
 			sub := subResult{
 				testFunc: testFunc,
-				subName:  humanize(subRaw),
+				subName:  humanize(name[slashIdx+1:]),
 				passed:   passed,
 			}
 			if _, seen := current.byFunc[testFunc]; !seen {
@@ -114,8 +97,7 @@ func main() {
 			current.byFunc[testFunc] = append(current.byFunc[testFunc], sub)
 
 		case strings.HasPrefix(line, "ok  \t") || strings.HasPrefix(line, "ok \t"):
-			fields := strings.Fields(line)
-			if len(fields) >= 2 {
+			if fields := strings.Fields(line); len(fields) >= 2 {
 				current.pkg = fields[1]
 				current.passed = true
 				pkgs = append(pkgs, current)
@@ -123,79 +105,71 @@ func main() {
 			}
 
 		case strings.HasPrefix(line, "FAIL\t") || strings.HasPrefix(line, "FAIL "):
-			fields := strings.Fields(line)
-			if len(fields) >= 2 {
+			if fields := strings.Fields(line); len(fields) >= 2 {
 				current.pkg = fields[1]
 				current.buildFailed = strings.Contains(line, "[build failed]")
 				pkgs = append(pkgs, current)
 				current = newPkgResult()
 			}
-
-		case strings.HasPrefix(line, "?   \t"):
-			// "?   	pkg [no test files]" — nothing to do.
 		}
 	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "testspec: read error: %v\n", err)
-		os.Exit(2)
-	}
-
-	// ── Render ───────────────────────────────────────────────────────────────
 
 	var totalSpecable, totalFailed, totalPackages int
 
 	for _, pkg := range pkgs {
 		totalPackages++
-		fmt.Printf("\n▶ %s\n", pkg.pkg)
+		fmt.Fprintf(w, "\n▶ %s\n", pkg.pkg)
 
 		if pkg.buildFailed {
-			fmt.Printf("  [BUILD FAILED]\n")
-			totalFailed++ // count the package as a failure
+			fmt.Fprintf(w, "  [BUILD FAILED]\n")
+			totalFailed++
 			continue
 		}
 
 		for _, fn := range pkg.funcOrder {
-			subs := pkg.byFunc[fn]
-
-			// collect what to show
 			var toShow []subResult
-			for _, s := range subs {
-				if isSpecable(s.subName) || *showAll {
+			for _, s := range pkg.byFunc[fn] {
+				if IsSpecable(s.subName) || showAll {
 					toShow = append(toShow, s)
 				}
 			}
 			if len(toShow) == 0 {
 				continue
 			}
-
-			// strip "Test" prefix from function name for readability
-			fnHuman := strings.TrimPrefix(fn, "Test")
-			fmt.Printf("\n  %s\n", fnHuman)
-
+			fmt.Fprintf(w, "\n  %s\n", strings.TrimPrefix(fn, "Test"))
 			for _, s := range toShow {
 				icon := "✓"
 				if !s.passed {
 					icon = "✗"
 					totalFailed++
 				}
-				if isSpecable(s.subName) {
+				if IsSpecable(s.subName) {
 					totalSpecable++
 				}
-				fmt.Printf("    %s  %s\n", icon, s.subName)
+				fmt.Fprintf(w, "    %s  %s\n", icon, s.subName)
 			}
 		}
 
-		if !pkg.passed {
-			fmt.Printf("\n  [PACKAGE FAILED]\n")
+		if !pkg.passed && !pkg.buildFailed {
+			fmt.Fprintf(w, "\n  [PACKAGE FAILED]\n")
 		}
 	}
 
-	// ── Summary ───────────────────────────────────────────────────────────────
-	fmt.Println()
+	fmt.Fprintln(w)
 	if totalFailed > 0 {
-		fmt.Printf("FAIL  %d package(s)  %d specable  %d failed\n", totalPackages, totalSpecable, totalFailed)
-		os.Exit(1)
+		fmt.Fprintf(w, "FAIL  %d package(s)  %d specable  %d failed\n", totalPackages, totalSpecable, totalFailed)
+		return 1
 	}
-	fmt.Printf("PASS  %d package(s)  %d specable\n", totalPackages, totalSpecable)
+	fmt.Fprintf(w, "PASS  %d package(s)  %d specable\n", totalPackages, totalSpecable)
+	return 0
+}
+
+func main() {
+	showAll := flag.Bool("all", false, "also show non-specable sub-tests")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "usage: go test -v ./... | testspec [--all]\n\n")
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+	os.Exit(run(os.Stdin, os.Stdout, *showAll))
 }
